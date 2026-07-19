@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Club Defensores del Agua</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <main class="login-container">
+    <img src="icons/icon-192.png" alt="Club Defensores del Agua" class="logo" />
+    <h1>Club Defensores del Agua</h1>
+    <p class="subtitle">Institución Educativa El Llano</p>
+
+    <form id="form-login" class="login-form">
+      <label for="correo">Correo</label>
+      <input type="email" id="correo" required autocomplete="username" />
+
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" required autocomplete="current-password" />
+
+      <button type="submit">Ingresar</button>
+      <p id="mensaje-error" class="error"></p>
+    </form>
+  </main>
+
+  <script type="module">
+    import { iniciarSesion, obtenerPerfilUsuario } from "./js/auth.js";
+
+    const form = document.getElementById("form-login");
+    const mensajeError = document.getElementById("mensaje-error");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      mensajeError.textContent = "";
+
+      const correo = document.getElementById("correo").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const user = await iniciarSesion(correo, password);
+        const perfil = await obtenerPerfilUsuario(user.uid);
+
+        if (!perfil || !perfil.activo) {
+          mensajeError.textContent = "Tu cuenta no está activa. Contacta a tu profesor.";
+          return;
+        }
+
+        // Guarda el perfil localmente para usarlo en las demás páginas
+        sessionStorage.setItem("perfilUsuario", JSON.stringify(perfil));
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        mensajeError.textContent = "Correo o contraseña incorrectos.";
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>
