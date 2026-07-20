@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reto - Club Defensores del Agua</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/nivel.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="dashboard.html" class="btn-volver">&larr; Volver al mapa</a>
+  </header>
+
+  <main class="nivel-container">
+    <p id="mensaje-carga">Cargando reto...</p>
+
+    <div id="nivel-contenido" class="nivel-contenido" style="display: none;">
+      <span class="nivel-eje" id="nivel-eje"></span>
+      <h1 id="nivel-titulo"></h1>
+      <p class="nivel-tipo" id="nivel-tipo"></p>
+      <p id="nivel-descripcion"></p>
+
+      <div class="nivel-puntos-box">
+        Este reto otorga <strong id="nivel-puntos"></strong> puntos
+      </div>
+
+      <button id="btn-completar" class="btn-completar">Marcar como completado</button>
+      <p id="mensaje-resultado" class="mensaje-resultado"></p>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { registrarProgreso, NOMBRES_EJES } from "./js/firestore.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const nivelId = params.get("id");
+
+    const mensajeCarga = document.getElementById("mensaje-carga");
+    const contenido = document.getElementById("nivel-contenido");
+    const btnCompletar = document.getElementById("btn-completar");
+    const mensajeResultado = document.getElementById("mensaje-resultado");
+
+    let usuarioActual = null;
+    let perfilActual = null;
+    let nivelActual = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      usuarioActual = user;
+
+      if (!nivelId) {
+        mensajeCarga.textContent = "No se especificó ningún reto.";
+        return;
+      }
+
+      try {
+        const [nivelSnap, perfilSnap] = await Promise.all([
+          getDoc(doc(db, "niveles", nivelId)),
+          getDoc(doc(db, "usuarios", user.uid)),
+        ]);
+
+        if (!nivelSnap.exists()) {
+          mensajeCarga.textContent = "Este reto no existe.";
+          return;
+        }
+
+        nivelActual = { id: nivelSnap.id, ...nivelSnap.data() };
+        perfilActual = perfilSnap.data();
+
+        document.getElementById("nivel-eje").textContent =
+          NOMBRES_EJES[nivelActual.ejeTematico] || nivelActual.ejeTematico;
+        document.getElementById("nivel-titulo").textContent = nivelActual.titulo;
+        document.getElementById("nivel-tipo").textContent =
+          "Tipo de actividad: " + nivelActual.tipoActividad;
+        document.getElementById("nivel-descripcion").textContent = nivelActual.descripcion;
+        document.getElementById("nivel-puntos").textContent = nivelActual.puntosOtorga;
+
+        mensajeCarga.style.display = "none";
+        contenido.style.display = "block";
+      } catch (error) {
+        mensajeCarga.textContent = "No se pudo cargar el reto.";
+        console.error(error);
+      }
+    });
+
+    btnCompletar.addEventListener("click", async () => {
+      if (!nivelActual || !usuarioActual) return;
+
+      btnCompletar.disabled = true;
+      btnCompletar.textContent = "Guardando...";
+
+      try {
+        const nuevoNivel = Math.max(
+          perfilActual.nivelActual,
+          nivelActual.orden + 1
+        );
+        await registrarProgreso(usuarioActual.uid, nivelActual.puntosOtorga, nuevoNivel);
+
+        mensajeResultado.textContent = `¡Reto completado! Ganaste ${nivelActual.puntosOtorga} puntos.`;
+        mensajeResultado.classList.add("exito");
+        btnCompletar.textContent = "Completado";
+
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 1800);
+      } catch (error) {
+        mensajeResultado.textContent = "Ocurrió un error al guardar tu progreso.";
+        btnCompletar.disabled = false;
+        btnCompletar.textContent = "Marcar como completado";
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>
