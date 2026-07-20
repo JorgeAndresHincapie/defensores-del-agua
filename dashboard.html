@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi progreso - Club Defensores del Agua</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-user">
+      <img src="icons/icon-192.png" alt="" class="avatar" />
+      <div>
+        <p class="user-name" id="nombre-usuario">Cargando...</p>
+        <p class="user-club">Institución Educativa El Llano</p>
+      </div>
+    </div>
+    <div class="topbar-stats">
+      <div class="stat">
+        <span class="stat-value" id="puntos-usuario">0</span>
+        <span class="stat-label">Puntos</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="nivel-usuario">1</span>
+        <span class="stat-label">Nivel</span>
+      </div>
+      <button id="btn-salir" class="btn-salir">Salir</button>
+    </div>
+  </header>
+
+  <main class="dashboard-container">
+    <h1>Explora los retos del club</h1>
+    <p id="mensaje-carga">Cargando niveles...</p>
+    <div id="ejes-container"></div>
+  </main>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { cerrarSesion } from "./js/auth.js";
+    import { obtenerNiveles, agruparPorEje, NOMBRES_EJES } from "./js/firestore.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const nombreEl = document.getElementById("nombre-usuario");
+    const puntosEl = document.getElementById("puntos-usuario");
+    const nivelEl = document.getElementById("nivel-usuario");
+    const mensajeCarga = document.getElementById("mensaje-carga");
+    const ejesContainer = document.getElementById("ejes-container");
+    const btnSalir = document.getElementById("btn-salir");
+
+    btnSalir.addEventListener("click", async () => {
+      await cerrarSesion();
+      window.location.href = "index.html";
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
+      if (!perfilSnap.exists()) {
+        window.location.href = "index.html";
+        return;
+      }
+      const perfil = perfilSnap.data();
+
+      nombreEl.textContent = perfil.nombre;
+      puntosEl.textContent = perfil.puntos;
+      nivelEl.textContent = perfil.nivelActual;
+
+      try {
+        const niveles = await obtenerNiveles();
+        const grupos = agruparPorEje(niveles);
+        mensajeCarga.remove();
+
+        Object.entries(grupos).forEach(([eje, nivelesDelEje]) => {
+          const seccion = document.createElement("section");
+          seccion.className = "eje-seccion";
+
+          const titulo = document.createElement("h2");
+          titulo.textContent = NOMBRES_EJES[eje] || eje;
+          seccion.appendChild(titulo);
+
+          const grid = document.createElement("div");
+          grid.className = "niveles-grid";
+
+          nivelesDelEje.forEach((nivel) => {
+            const card = document.createElement("a");
+            card.href = `nivel.html?id=${nivel.id}`;
+            card.className = "nivel-card";
+            card.innerHTML = `
+              <span class="nivel-orden">Nivel ${nivel.orden}</span>
+              <h3>${nivel.titulo}</h3>
+              <p>${nivel.descripcion}</p>
+              <span class="nivel-puntos">+${nivel.puntosOtorga} pts</span>
+            `;
+            grid.appendChild(card);
+          });
+
+          seccion.appendChild(grid);
+          ejesContainer.appendChild(seccion);
+        });
+      } catch (error) {
+        mensajeCarga.textContent = "No se pudieron cargar los niveles.";
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>

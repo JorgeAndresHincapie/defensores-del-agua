@@ -1,0 +1,140 @@
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 12px 24px;
+  box-shadow: 0 2px 8px rgba(1, 87, 155, 0.1);
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--azul-agua);
+}
+
+.user-name {
+  font-weight: bold;
+  color: var(--azul-oscuro);
+  margin: 0;
+}
+
+.user-club {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0;
+}
+
+.topbar-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--verde-eco);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.btn-salir {
+  background: none;
+  border: 1px solid var(--azul-agua);
+  color: var(--azul-agua);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-salir:hover {
+  background: var(--azul-agua);
+  color: white;
+}
+
+.dashboard-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.dashboard-container h1 {
+  color: var(--azul-oscuro);
+  font-size: 1.5rem;
+}
+
+.eje-seccion {
+  margin-bottom: 32px;
+}
+
+.eje-seccion h2 {
+  color: var(--verde-eco);
+  font-size: 1.1rem;
+  border-bottom: 2px solid #c8e6c9;
+  padding-bottom: 6px;
+}
+
+.niveles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.nivel-card {
+  display: block;
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  text-decoration: none;
+  color: var(--texto);
+  box-shadow: 0 2px 8px rgba(1, 87, 155, 0.1);
+  transition: transform 0.15s ease;
+}
+
+.nivel-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 14px rgba(1, 87, 155, 0.2);
+}
+
+.nivel-orden {
+  font-size: 0.75rem;
+  color: var(--azul-agua);
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.nivel-card h3 {
+  margin: 6px 0;
+  font-size: 1rem;
+  color: var(--azul-oscuro);
+}
+
+.nivel-card p {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0 0 8px;
+}
+
+.nivel-puntos {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--verde-eco);
+}
