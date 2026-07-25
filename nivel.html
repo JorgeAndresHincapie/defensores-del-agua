@@ -20,13 +20,32 @@
       <span class="nivel-eje" id="nivel-eje"></span>
       <h1 id="nivel-titulo"></h1>
       <p class="nivel-tipo" id="nivel-tipo"></p>
+      
       <p id="nivel-descripcion"></p>
+
+<img id="nivel-ilustracion" src="" alt="" class="ilustracion-nivel" style="display:none;" />
+
 
       <div class="nivel-puntos-box">
         Este reto otorga <strong id="nivel-puntos"></strong> puntos
       </div>
 
-      <button id="btn-completar" class="btn-completar">Marcar como completado</button>
+<div id="cuestionario-container" class="simulacion-container" style="display:none;">
+  <p id="cuestionario-progreso" class="instrucciones"></p>
+  <p id="cuestionario-pregunta" class="mensaje-juego"></p>
+  <div id="cuestionario-opciones" class="fichas-desordenadas"></div>
+  <p id="cuestionario-feedback" class="mensaje-juego"></p>
+</div>
+
+
+      <div id="juego-acueducto" class="simulacion-container" style="display:none;">
+  <img src="css/imagenes/Copilot_20260724_072254.png" alt="Ilustración del viaje del agua desde la bocatoma hasta el grifo" class="ilustracion-nivel" />
+  <p class="instrucciones">Arrastra las tarjetas para ordenarlas: desde la bocatoma hasta tu casa.</p>
+  <div id="zona-orden" class="zona-orden"></div>
+  <div id="fichas-desordenadas" class="fichas-desordenadas"></div>
+  <p id="mensaje-juego" class="mensaje-juego"></p>
+</div>
+      <button id="btn-completar" class="btn-completar" disabled>Marcar como completado</button>
       <p id="mensaje-resultado" class="mensaje-resultado"></p>
     </div>
   </main>
@@ -48,6 +67,120 @@
     let usuarioActual = null;
     let perfilActual = null;
     let nivelActual = null;
+function iniciarJuegoAcueducto() {
+      const etapas = [
+        { id: "bocatoma", texto: "Bocatoma — captación del agua" },
+        { id: "aduccion", texto: "Aducción — viaje hasta la planta" },
+        { id: "planta", texto: "Planta de tratamiento — potabilización" },
+        { id: "tanque", texto: "Tanque de almacenamiento" },
+        { id: "red", texto: "Red de distribución" },
+        { id: "grifo", texto: "Grifo de tu casa" },
+      ];
+
+      document.getElementById("juego-acueducto").style.display = "block";
+      const zonaOrden = document.getElementById("zona-orden");
+      const fichasContenedor = document.getElementById("fichas-desordenadas");
+      const mensajeJuego = document.getElementById("mensaje-juego");
+
+      for (let i = 0; i < etapas.length; i++) {
+        const slot = document.createElement("div");
+        slot.className = "slot-orden";
+        slot.dataset.posicion = i;
+        slot.addEventListener("dragover", (e) => e.preventDefault());
+        slot.addEventListener("drop", (e) => {
+          e.preventDefault();
+          const fichaId = e.dataTransfer.getData("text/plain");
+          const ficha = document.getElementById(fichaId);
+          if (slot.children.length === 0) {
+            slot.appendChild(ficha);
+            verificarOrden();
+          }
+        });
+        zonaOrden.appendChild(slot);
+      }
+
+      const mezcladas = [...etapas].sort(() => Math.random() - 0.5);
+      mezcladas.forEach((etapa) => {
+        const ficha = document.createElement("div");
+        ficha.className = "ficha-arrastrable";
+        ficha.id = "ficha-" + etapa.id;
+        ficha.textContent = etapa.texto;
+        ficha.draggable = true;
+        ficha.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/plain", ficha.id);
+        });
+        fichasContenedor.appendChild(ficha);
+      });
+
+      function verificarOrden() {
+        const slots = zonaOrden.querySelectorAll(".slot-orden");
+        const todasLlenas = [...slots].every((s) => s.children.length > 0);
+        if (!todasLlenas) return;
+
+        const ordenActual = [...slots].map((s) => s.children[0].id.replace("ficha-", ""));
+        const ordenCorrecto = etapas.map((e) => e.id);
+        const esCorrecto = ordenActual.every((id, i) => id === ordenCorrecto[i]);
+
+        if (esCorrecto) {
+          mensajeJuego.textContent = "¡Correcto! Así viaja el agua hasta tu casa 💧";
+          mensajeJuego.classList.add("exito");
+          btnCompletar.disabled = false;
+        } else {
+          mensajeJuego.textContent = "El orden no es correcto todavía. Sigue intentando.";
+          mensajeJuego.classList.remove("exito");
+        }
+      }
+    }
+  
+
+    let preguntaActual = 0;
+
+    function iniciarCuestionario(nivel) {
+      document.getElementById("cuestionario-container").style.display = "block";
+      preguntaActual = 0;
+      mostrarPregunta(nivel.preguntas);
+    }
+
+    function mostrarPregunta(preguntas) {
+      const actual = preguntas[preguntaActual];
+      document.getElementById("cuestionario-progreso").textContent =
+        `Pregunta ${preguntaActual + 1} de ${preguntas.length}`;
+      document.getElementById("cuestionario-pregunta").textContent = actual.pregunta;
+      document.getElementById("cuestionario-feedback").textContent = "";
+      document.getElementById("cuestionario-feedback").classList.remove("exito");
+
+      const opcionesDiv = document.getElementById("cuestionario-opciones");
+      opcionesDiv.innerHTML = "";
+      actual.opciones.forEach((opcion, index) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "ficha-arrastrable";
+        btn.style.cursor = "pointer";
+        btn.textContent = opcion;
+        btn.addEventListener("click", () => responderPregunta(index, actual.respuestaCorrecta, preguntas));
+        opcionesDiv.appendChild(btn);
+      });
+    }
+
+    function responderPregunta(seleccion, correcta, preguntas) {
+      const feedback = document.getElementById("cuestionario-feedback");
+      if (seleccion === correcta) {
+        feedback.textContent = "¡Correcto!";
+        feedback.classList.add("exito");
+        preguntaActual++;
+        if (preguntaActual < preguntas.length) {
+          setTimeout(() => mostrarPregunta(preguntas), 900);
+        } else {
+          setTimeout(() => {
+            document.getElementById("cuestionario-container").style.display = "none";
+            btnCompletar.disabled = false;
+          }, 900);
+        }
+      } else {
+        feedback.textContent = "Intenta de nuevo";
+        feedback.classList.remove("exito");
+      }
+    }
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -81,10 +214,36 @@
         document.getElementById("nivel-tipo").textContent =
           "Tipo de actividad: " + nivelActual.tipoActividad;
         document.getElementById("nivel-descripcion").textContent = nivelActual.descripcion;
+        const ilustraciones = {
+          "acueducto-01": {
+            src: "css/imagenes/Copilot_20260724_072254.png",
+            alt: "Ilustración del viaje del agua desde la bocatoma hasta el grifo"
+          },
+        };
+        const ilustracionEl = document.getElementById("nivel-ilustracion");
+        if (ilustraciones[nivelActual.id]) {
+          ilustracionEl.src = ilustraciones[nivelActual.id].src;
+          ilustracionEl.alt = ilustraciones[nivelActual.id].alt;
+          ilustracionEl.style.display = "block";
+        }
         document.getElementById("nivel-puntos").textContent = nivelActual.puntosOtorga;
+
+        const retosCompletados = perfilActual.retosCompletados || [];
+        if (retosCompletados.includes(nivelActual.id)) {
+          btnCompletar.disabled = true;
+          btnCompletar.textContent = "Ya completado ✓";
+          mensajeResultado.textContent = "Ya ganaste los puntos de este reto anteriormente.";
+        }
 
         mensajeCarga.style.display = "none";
         contenido.style.display = "block";
+        if (nivelActual.id === "acueducto-01" && !retosCompletados.includes(nivelActual.id)) {
+          iniciarJuegoAcueducto();
+          } else if (nivelActual.tipoActividad === "cuestionario" && !retosCompletados.includes(nivelActual.id)) {
+          iniciarCuestionario(nivelActual);
+        } else if (!retosCompletados.includes(nivelActual.id)) {
+          btnCompletar.disabled = false;
+        }
       } catch (error) {
         mensajeCarga.textContent = "No se pudo cargar el reto.";
         console.error(error);
@@ -99,12 +258,29 @@
 
       try {
         const nuevoNivel = Math.max(
-          perfilActual.nivelActual,
-          nivelActual.orden + 1
-        );
-        await registrarProgreso(usuarioActual.uid, nivelActual.puntosOtorga, nuevoNivel);
+  Number.isFinite(perfilActual.nivelActual) ? perfilActual.nivelActual : 1,
+  nivelActual.orden + 1
+);
 
-        mensajeResultado.textContent = `¡Reto completado! Ganaste ${nivelActual.puntosOtorga} puntos.`;
+if (!Number.isFinite(nuevoNivel)) {
+  console.error("nuevoNivel inválido, abortando:", { perfilActual, nivelActual });
+  alert("Ocurrió un error al registrar tu progreso. Intenta de nuevo.");
+  return;
+}
+
+await registrarProgreso(
+          usuarioActual.uid,
+          nivelActual.id,
+          nivelActual.insigniaId,
+          nivelActual.puntosOtorga,
+          nuevoNivel
+        );
+
+        let mensaje = `¡Reto completado! Ganaste ${nivelActual.puntosOtorga} puntos.`;
+        if (nivelActual.insigniaId) {
+          mensaje += " Desbloqueaste una nueva insignia 🏅";
+        }
+        mensajeResultado.textContent = mensaje;
         mensajeResultado.classList.add("exito");
         btnCompletar.textContent = "Completado";
 
