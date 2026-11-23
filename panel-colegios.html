@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Colegios - Club Defensores del Agua</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0288d1" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/panel-profesor.css" />
+  <style>
+    .colegio-form label { display:block; margin-top:12px; font-weight:600; font-size:.9rem; }
+    .colegio-form input[type="text"] { width:100%; padding:8px; margin-top:4px; }
+    .colegio-form input[type="file"] { margin-top:4px; }
+    .preview-img { max-height:60px; margin-top:6px; display:block; }
+    .colegios-lista{ margin-top:28px; display:grid; gap:14px; }
+    .colegio-item{
+      border:1px solid #ddd; border-radius:10px; padding:14px 16px;
+      display:flex; align-items:center; gap:16px;
+    }
+    .colegio-item img{ height:48px; width:48px; object-fit:contain; border-radius:6px; background:#f5f5f5; }
+    .colegio-item .info strong{ display:block; }
+    .colegio-item .info span{ font-size:.82rem; color:#666; }
+    .firmas-check{ font-size:.78rem; color:#2e7d32; margin-top:2px; }
+    #btn-guardar-colegio { margin-top:16px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="dashboard.html" class="btn-volver">&larr; Volver al mapa</a>
+    <span id="usuario-nombre" class="topbar-user"></span>
+    <button id="btn-salir" class="btn-salir">Salir</button>
+  </header>
+
+  <p id="mensaje-carga" class="mensaje-carga">Verificando acceso...</p>
+  <p id="mensaje-sin-acceso" class="mensaje-sin-acceso" style="display: none;">
+    No tienes permiso para ver esta página. Esta sección es solo para el administrador.
+    <a href="dashboard.html">Volver al mapa</a>
+  </p>
+
+  <main id="panel-contenido" class="panel-container" style="display: none;">
+    <h1>Colegios</h1>
+    <p class="panel-subtitulo">
+      Crea cada colegio, sube su escudo y las firmas del profesor, el rector y el coordinador.
+      Esto es lo que aparecerá en el certificado final de los estudiantes de ese colegio.
+    </p>
+
+    <section class="colegio-form">
+      <h2>Crear o editar colegio</h2>
+
+      <label for="campo-institucion-id">Identificador del colegio (institucionId, sin espacios, ej: el-llano)</label>
+      <input type="text" id="campo-institucion-id" placeholder="ej: el-llano" required />
+
+      <label for="campo-nombre-colegio">Nombre completo del colegio</label>
+      <input type="text" id="campo-nombre-colegio" placeholder="ej: Institución Educativa El Llano" required />
+
+      <label for="campo-escudo">Escudo del colegio (imagen)</label>
+      <input type="file" id="campo-escudo" accept="image/*" />
+      <img id="preview-escudo" class="preview-img" style="display:none;" />
+
+      <label for="campo-firma-profesor">Firma del profesor del curso</label>
+      <p style="font-size:.8rem; color:#666; margin:2px 0 4px;">Sube la imagen de la firma, o si el profesor prefiere no compartirla, solo escribe su nombre y el certificado mostrará una línea de firma con su nombre impreso.</p>
+      <input type="file" id="campo-firma-profesor" accept="image/*" />
+      <img id="preview-firma-profesor" class="preview-img" style="display:none;" />
+      <input type="text" id="campo-nombre-profesor" placeholder="Nombre del profesor (si no sube firma)" style="margin-top:6px;" />
+
+      <label for="campo-firma-rector">Firma del rector</label>
+      <p style="font-size:.8rem; color:#666; margin:2px 0 4px;">Sube la imagen, o solo escribe el nombre si el rector prefiere no compartir su firma escaneada.</p>
+      <input type="file" id="campo-firma-rector" accept="image/*" />
+      <img id="preview-firma-rector" class="preview-img" style="display:none;" />
+      <input type="text" id="campo-nombre-rector" placeholder="Nombre del rector (si no sube firma)" style="margin-top:6px;" />
+
+      <label for="campo-firma-coordinador">Firma del coordinador</label>
+      <p style="font-size:.8rem; color:#666; margin:2px 0 4px;">Sube la imagen, o solo escribe el nombre si el coordinador prefiere no compartir su firma escaneada.</p>
+      <input type="file" id="campo-firma-coordinador" accept="image/*" />
+      <img id="preview-firma-coordinador" class="preview-img" style="display:none;" />
+      <input type="text" id="campo-nombre-coordinador" placeholder="Nombre del coordinador (si no sube firma)" style="margin-top:6px;" />
+
+      <button id="btn-guardar-colegio" type="button">Guardar colegio</button>
+      <p id="mensaje-form"></p>
+    </section>
+
+    <section>
+      <h2>Colegios registrados</h2>
+      <p id="mensaje-lista">Cargando...</p>
+      <div class="colegios-lista" id="lista-colegios"></div>
+    </section>
+  </main>
+<div class="card" id="cardCrearUsuarioDA" style="max-width:520px">
+  <h2>Crear profesor o estudiante</h2>
+
+  <label for="daNombre">Nombre completo</label>
+  <input type="text" id="daNombre" placeholder="Ej: María Gómez"/>
+
+  <label for="daEmail">Correo electrónico</label>
+  <input type="email" id="daEmail" placeholder="correo@ejemplo.com"/>
+
+  <label for="daPassword">Contraseña temporal</label>
+  <input type="text" id="daPassword" placeholder="Mínimo 6 caracteres"/>
+
+  <label for="daRol">Rol</label>
+  <select id="daRol">
+    <option value="estudiante">Estudiante</option>
+    <option value="profesor">Profesor</option>
+  </select>
+
+  <label for="daInstitucionId">Institución (institucionId)</label>
+  <input type="text" id="daInstitucionId" placeholder="Ej: el-llano"/>
+  <p style="font-size:.78rem;color:#666;margin-top:.3rem">
+    Debe coincidir exactamente con el institucionId ya creado arriba en "Colegios registrados".
+  </p>
+
+  <button id="btn-crear-usuario-da" type="button" style="margin-top:12px">
+    Crear usuario
+  </button>
+
+  <p id="daMsg" style="font-size:.85rem;margin-top:.7rem;font-weight:600"></p>
+</div>
+  <script type="module">
+    import { auth } from "./js/firebase-config.js";
+    import { obtenerPerfilUsuario, cerrarSesion } from "./js/auth.js";
+    import {
+      crearOActualizarInstitucion,
+      obtenerInstituciones,
+    } from "./js/firestore.js";
+    import { subirArchivo } from "./js/storage-helper.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const mensajeCarga = document.getElementById("mensaje-carga");
+    const mensajeSinAcceso = document.getElementById("mensaje-sin-acceso");
+    const panelContenido = document.getElementById("panel-contenido");
+    const usuarioNombreEl = document.getElementById("usuario-nombre");
+    const btnSalir = document.getElementById("btn-salir");
+
+    const campoId = document.getElementById("campo-institucion-id");
+    const campoNombre = document.getElementById("campo-nombre-colegio");
+    const campoEscudo = document.getElementById("campo-escudo");
+    const campoFirmaProfesor = document.getElementById("campo-firma-profesor");
+    const campoFirmaRector = document.getElementById("campo-firma-rector");
+    const campoFirmaCoordinador = document.getElementById("campo-firma-coordinador");
+    const campoNombreProfesor = document.getElementById("campo-nombre-profesor");
+    const campoNombreRector = document.getElementById("campo-nombre-rector");
+    const campoNombreCoordinador = document.getElementById("campo-nombre-coordinador");
+    const btnGuardar = document.getElementById("btn-guardar-colegio");
+    const mensajeForm = document.getElementById("mensaje-form");
+
+    const mensajeLista = document.getElementById("mensaje-lista");
+    const listaColegios = document.getElementById("lista-colegios");
+
+    btnSalir.addEventListener("click", async () => {
+      await cerrarSesion();
+      window.location.href = "index.html";
+    });
+
+    function conectarPreview(inputEl, previewId) {
+      inputEl.addEventListener("change", () => {
+        const preview = document.getElementById(previewId);
+        if (inputEl.files[0]) {
+          preview.src = URL.createObjectURL(inputEl.files[0]);
+          preview.style.display = "block";
+        }
+      });
+    }
+    conectarPreview(campoEscudo, "preview-escudo");
+    conectarPreview(campoFirmaProfesor, "preview-firma-profesor");
+    conectarPreview(campoFirmaRector, "preview-firma-rector");
+    conectarPreview(campoFirmaCoordinador, "preview-firma-coordinador");
+
+    async function cargarLista() {
+      try {
+        const colegios = await obtenerInstituciones();
+        mensajeLista.style.display = "none";
+        listaColegios.innerHTML = "";
+
+        if (colegios.length === 0) {
+          mensajeLista.style.display = "block";
+          mensajeLista.textContent = "Todavía no has creado ningún colegio.";
+          return;
+        }
+
+        colegios.forEach((colegio) => {
+          const item = document.createElement("div");
+          item.className = "colegio-item";
+          const firmasListas = [
+            colegio.firmaProfesorUrl && "profesor (imagen)",
+            colegio.nombreProfesor && !colegio.firmaProfesorUrl && "profesor (nombre)",
+            colegio.firmaRectorUrl && "rector (imagen)",
+            colegio.nombreRector && !colegio.firmaRectorUrl && "rector (nombre)",
+            colegio.firmaCoordinadorUrl && "coordinador (imagen)",
+            colegio.nombreCoordinador && !colegio.firmaCoordinadorUrl && "coordinador (nombre)",
+          ].filter(Boolean);
+
+          item.innerHTML = `
+            ${colegio.escudoUrl ? `<img src="${colegio.escudoUrl}" alt="Escudo" />` : `<div style="width:48px;height:48px;background:#eee;border-radius:6px;"></div>`}
+            <div class="info">
+              <strong>${colegio.nombre}</strong>
+              <span>ID: ${colegio.id}</span>
+              <div class="firmas-check">
+                ${firmasListas.length > 0 ? `✔ Firmas cargadas: ${firmasListas.join(", ")}` : "Sin firmas cargadas todavía"}
+              </div>
+            </div>
+          `;
+          listaColegios.appendChild(item);
+        });
+      } catch (error) {
+        mensajeLista.textContent = "No se pudieron cargar los colegios.";
+        console.error(error);
+      }
+    }
+
+    btnGuardar.addEventListener("click", async () => {
+      const institucionId = campoId.value.trim();
+      const nombre = campoNombre.value.trim();
+
+      if (!institucionId || !nombre) {
+        mensajeForm.textContent = "El identificador y el nombre del colegio son obligatorios.";
+        return;
+      }
+
+      btnGuardar.disabled = true;
+      mensajeForm.textContent = "Guardando...";
+
+      try {
+        const datos = { nombre };
+
+        if (campoEscudo.files[0]) {
+          mensajeForm.textContent = "Subiendo escudo...";
+          datos.escudoUrl = await subirArchivo(`colegios/${institucionId}`, campoEscudo.files[0]);
+        }
+        if (campoFirmaProfesor.files[0]) {
+          mensajeForm.textContent = "Subiendo firma del profesor...";
+          datos.firmaProfesorUrl = await subirArchivo(`colegios/${institucionId}`, campoFirmaProfesor.files[0]);
+        }
+        if (campoFirmaRector.files[0]) {
+          mensajeForm.textContent = "Subiendo firma del rector...";
+          datos.firmaRectorUrl = await subirArchivo(`colegios/${institucionId}`, campoFirmaRector.files[0]);
+        }
+        if (campoFirmaCoordinador.files[0]) {
+          mensajeForm.textContent = "Subiendo firma del coordinador...";
+          datos.firmaCoordinadorUrl = await subirArchivo(`colegios/${institucionId}`, campoFirmaCoordinador.files[0]);
+        }
+
+        if (campoNombreProfesor.value.trim()) datos.nombreProfesor = campoNombreProfesor.value.trim();
+        if (campoNombreRector.value.trim()) datos.nombreRector = campoNombreRector.value.trim();
+        if (campoNombreCoordinador.value.trim()) datos.nombreCoordinador = campoNombreCoordinador.value.trim();
+
+        await crearOActualizarInstitucion(institucionId, datos);
+        mensajeForm.textContent = "¡Colegio guardado con éxito!";
+        campoId.value = "";
+        campoNombre.value = "";
+        [campoEscudo, campoFirmaProfesor, campoFirmaRector, campoFirmaCoordinador].forEach((c) => (c.value = ""));
+        [campoNombreProfesor, campoNombreRector, campoNombreCoordinador].forEach((c) => (c.value = ""));
+        ["preview-escudo", "preview-firma-profesor", "preview-firma-rector", "preview-firma-coordinador"].forEach((id) => {
+          document.getElementById(id).style.display = "none";
+        });
+        cargarLista();
+      } catch (error) {
+        mensajeForm.textContent = "Ocurrió un error al guardar el colegio.";
+        console.error(error);
+      } finally {
+        btnGuardar.disabled = false;
+      }
+    });
+
+    onAuthStateChanged(auth, async (usuario) => {
+      if (!usuario) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const perfil = await obtenerPerfilUsuario(usuario.uid);
+
+      if (!perfil || perfil.rol !== "superadmin") {
+        mensajeCarga.style.display = "none";
+        mensajeSinAcceso.style.display = "block";
+        return;
+      }
+
+      usuarioNombreEl.textContent = perfil.nombre;
+      mensajeCarga.style.display = "none";
+      panelContenido.style.display = "block";
+      cargarLista();
+    });
+  </script>
+</body>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { firebaseConfig, db as dbPrincipal } from "./js/firebase-config.js";
+
+const secondaryAppDA = initializeApp(firebaseConfig, "SecondaryDA");
+const secondaryAuthDA = getAuth(secondaryAppDA);
+
+document.getElementById("btn-crear-usuario-da").addEventListener("click", async () => {
+  const nombre = document.getElementById("daNombre").value.trim();
+  const email = document.getElementById("daEmail").value.trim();
+  const password = document.getElementById("daPassword").value;
+  const rol = document.getElementById("daRol").value;
+  const institucionId = document.getElementById("daInstitucionId").value.trim();
+  const msg = document.getElementById("daMsg");
+
+  if (!nombre || !email || !password || !institucionId) {
+    msg.style.color = "#C53030";
+    msg.textContent = "Completa nombre, correo, contraseña e institución.";
+    return;
+  }
+  if (password.length < 6) {
+    msg.style.color = "#C53030";
+    msg.textContent = "La contraseña debe tener al menos 6 caracteres.";
+    return;
+  }
+
+  try {
+    const cred = await createUserWithEmailAndPassword(secondaryAuthDA, email, password);
+    const uid = cred.user.uid;
+
+    await setDoc(doc(dbPrincipal, "usuarios", uid), {
+      nombre,
+      email,
+      rol,
+      institucionId,
+      activo: true,
+      nivelActual: "acueducto",
+      puntos: 0,
+      retosCompletados: [],
+      insignias: [],
+      creadoEn: serverTimestamp(),
+      creadoPor: "superadmin",
+    });
+
+    await signOutSecondary(secondaryAuthDA);
+
+    msg.style.color = "#1A7A5E";
+    msg.textContent = `✓ Usuario creado: ${email} (${rol}, institución: ${institucionId})`;
+
+    document.getElementById("daNombre").value = "";
+    document.getElementById("daEmail").value = "";
+    document.getElementById("daPassword").value = "";
+    document.getElementById("daInstitucionId").value = "";
+
+  } catch (e) {
+    msg.style.color = "#C53030";
+    if (e.code === "auth/email-already-in-use") {
+      msg.textContent = "Ese correo ya está registrado.";
+    } else if (e.code === "auth/weak-password") {
+      msg.textContent = "La contraseña es muy débil (mínimo 6 caracteres).";
+    } else if (e.code === "auth/invalid-email") {
+      msg.textContent = "El correo no es válido.";
+    } else {
+      msg.textContent = "Error al crear usuario: " + e.message;
+    }
+    console.error(e);
+  }
+});
+</script>
+</html>

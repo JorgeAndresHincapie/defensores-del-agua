@@ -1,0 +1,344 @@
+| <!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de administrador - Club Defensores del Agua</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0288d1" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/panel-profesor.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="dashboard.html" class="btn-volver">&larr; Volver al mapa</a>
+    <span id="usuario-nombre" class="topbar-user"></span>
+    <button id="btn-salir" class="btn-salir">Salir</button>
+  </header>
+
+  <p id="mensaje-carga" class="mensaje-carga">Verificando acceso...</p>
+  <p id="mensaje-sin-acceso" class="mensaje-sin-acceso" style="display: none;">
+    No tienes permiso para ver esta página. Esta sección es solo para el administrador.
+    <a href="dashboard.html">Volver al mapa</a>
+  </p>
+
+  <main id="panel-contenido" class="panel-container" style="display: none;">
+    <h1>Panel de administrador</h1>
+    <p class="panel-subtitulo">Crea, edita y activa o desactiva los retos del club.</p>
+
+    <section class="panel-form-seccion">
+      <h2 id="form-titulo">Crear nuevo reto</h2>
+      <form id="form-nivel" class="panel-form">
+        <input type="hidden" id="nivel-id-original" value="" />
+
+        <label for="campo-id">ID del documento (único, sin espacios)</label>
+        <input type="text" id="campo-id" placeholder="ej: ahorro-agua-02" required />
+
+        <label for="campo-titulo">Título</label>
+        <input type="text" id="campo-titulo" placeholder="ej: Cierra la llave" required />
+
+        <label for="campo-descripcion">Descripción</label>
+        <textarea id="campo-descripcion" rows="2" required></textarea>
+
+        <label for="campo-eje">Eje temático</label>
+        <select id="campo-eje" required>
+  <option value="acueducto">El viaje del agua (acueducto)</option>
+  <option value="pago-servicios">Cultura de pago (pago-servicios)</option>
+  <option value="ahorro-agua">Ahorro del agua (ahorro-agua)</option>
+  <option value="residuos-solidos">Residuos sólidos (residuos-solidos)</option>
+  <option value="energia">Energía (energia)</option>
+  <option value="fuentes-hidricas">Protección hídrica (fuentes-hidricas)</option>
+  <option value="huella-ecologica">Huella ecológica (huella-ecologica)</option>
+  <option value="alimentacion">Alimentación sostenible (alimentacion)</option>
+  <option value="reforestacion">Reforestación (reforestacion)</option>
+  <option value="biodiversidad">Biodiversidad (biodiversidad)</option>
+</select>
+
+        <label for="campo-orden">Orden dentro del eje</label>
+        <input type="number" id="campo-orden" min="1" value="1" required />
+
+        <label for="campo-puntos">Puntos que otorga</label>
+        <input type="number" id="campo-puntos" min="1" value="50" required />
+
+        <label for="campo-tipo">Tipo de actividad</label>
+        <input type="text" id="campo-tipo" placeholder="ej: simulacion, quiz, minijuego" required />
+
+        <label for="campo-insignia">ID de insignia (opcional, dejar vacío si no otorga)</label>
+        <input type="text" id="campo-insignia" placeholder="ej: guardian-del-agua" />
+
+        <label for="campo-contenido">Contenido adicional en JSON (preguntas o pasos — opcional)</label>
+        <textarea id="campo-contenido" rows="6" placeholder='Para quiz: {"preguntas": [...]}  —  Para ordenar: {"pasos": [...]}'></textarea>
+
+        <label class="check-label">
+          <input type="checkbox" id="campo-activo" checked />
+          Reto activo (visible para los estudiantes)
+        </label>
+
+        <div class="panel-form-botones">
+          <button type="submit" id="btn-guardar">Guardar reto</button>
+          <button type="button" id="btn-cancelar-edicion" style="display:none;">Cancelar edición</button>
+        </div>
+        <p id="mensaje-form" class="mensaje-form"></p>
+      </form>
+    </section>
+
+    <section class="panel-lista-seccion">
+      <h2>Retos existentes</h2>
+      <p id="mensaje-lista">Cargando retos...</p>
+      <div id="lista-niveles" class="lista-niveles"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { auth } from "./js/firebase-config.js";
+    import { obtenerPerfilUsuario, cerrarSesion } from "./js/auth.js";
+    import {
+      obtenerNivelesTodos,
+      existeNivel,
+      existeOrdenEnEje,
+      guardarNivel,
+      cambiarActivoNivel,
+      eliminarNivel,
+      NOMBRES_EJES,
+    } from "./js/firestore.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const mensajeCarga = document.getElementById("mensaje-carga");
+    const mensajeSinAcceso = document.getElementById("mensaje-sin-acceso");
+    const panelContenido = document.getElementById("panel-contenido");
+    const usuarioNombreEl = document.getElementById("usuario-nombre");
+    const btnSalir = document.getElementById("btn-salir");
+
+    const form = document.getElementById("form-nivel");
+    const formTitulo = document.getElementById("form-titulo");
+    const campoIdOriginal = document.getElementById("nivel-id-original");
+    const campoId = document.getElementById("campo-id");
+    const campoTitulo = document.getElementById("campo-titulo");
+    const campoDescripcion = document.getElementById("campo-descripcion");
+    const campoEje = document.getElementById("campo-eje");
+    const campoOrden = document.getElementById("campo-orden");
+    const campoPuntos = document.getElementById("campo-puntos");
+    const campoTipo = document.getElementById("campo-tipo");
+    const campoInsignia = document.getElementById("campo-insignia");
+    const campoContenido = document.getElementById("campo-contenido");
+    const campoActivo = document.getElementById("campo-activo");
+    const mensajeForm = document.getElementById("mensaje-form");
+    const btnCancelarEdicion = document.getElementById("btn-cancelar-edicion");
+    const btnGuardar = document.getElementById("btn-guardar");
+
+    const mensajeLista = document.getElementById("mensaje-lista");
+    const listaNiveles = document.getElementById("lista-niveles");
+
+    btnSalir.addEventListener("click", async () => {
+      await cerrarSesion();
+      window.location.href = "index.html";
+    });
+
+    btnCancelarEdicion.addEventListener("click", () => {
+      resetearFormulario();
+    });
+
+    function resetearFormulario() {
+      form.reset();
+      campoIdOriginal.value = "";
+      campoId.disabled = false;
+      campoActivo.checked = true;
+      formTitulo.textContent = "Crear nuevo reto";
+      btnCancelarEdicion.style.display = "none";
+      mensajeForm.textContent = "";
+    }
+
+    function cargarEnFormulario(nivel) {
+      campoIdOriginal.value = nivel.id;
+      campoId.value = nivel.id;
+      campoId.disabled = true;
+      campoTitulo.value = nivel.titulo || "";
+      campoDescripcion.value = nivel.descripcion || "";
+      campoEje.value = nivel.ejeTematico || "acueducto";
+      campoOrden.value = nivel.orden || 1;
+      campoPuntos.value = nivel.puntosOtorga || 50;
+      campoTipo.value = nivel.tipoActividad || "";
+      campoInsignia.value = nivel.insigniaId || "";
+      campoContenido.value = nivel.preguntas
+        ? JSON.stringify({ preguntas: nivel.preguntas }, null, 2)
+        : nivel.pasos
+        ? JSON.stringify({ pasos: nivel.pasos }, null, 2)
+        : "";
+      campoActivo.checked = nivel.activo !== false;
+      formTitulo.textContent = `Editando: ${nivel.titulo}`;
+      btnCancelarEdicion.style.display = "inline-block";
+      mensajeForm.textContent = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function cargarLista() {
+      try {
+        const niveles = await obtenerNivelesTodos();
+        mensajeLista.style.display = "none";
+        listaNiveles.innerHTML = "";
+
+        niveles.forEach((nivel) => {
+          const item = document.createElement("div");
+          item.className = "nivel-admin-item" + (nivel.activo === false ? " inactivo" : "");
+          item.innerHTML = `
+            <div class="nivel-admin-info">
+              <span class="nivel-admin-eje">${NOMBRES_EJES[nivel.ejeTematico] || nivel.ejeTematico} · orden ${nivel.orden}</span>
+              <strong>${nivel.titulo}</strong>
+              <span class="nivel-admin-id">${nivel.id}</span>
+              ${nivel.activo === false ? '<span class="badge-inactivo">Inactivo</span>' : ""}
+            </div>
+            <div class="nivel-admin-botones">
+              <button class="btn-editar">Editar</button>
+              <button class="btn-toggle">${nivel.activo === false ? "Activar" : "Desactivar"}</button>
+              <button class="btn-eliminar">Eliminar</button>
+            </div>
+          `;
+
+          item.querySelector(".btn-editar").addEventListener("click", () => cargarEnFormulario(nivel));
+
+          item.querySelector(".btn-toggle").addEventListener("click", async () => {
+            await cambiarActivoNivel(nivel.id, nivel.activo === false);
+            cargarLista();
+          });
+
+          item.querySelector(".btn-eliminar").addEventListener("click", async () => {
+            const confirmado = confirm(`¿Eliminar permanentemente el reto "${nivel.titulo}"? Esta acción no se puede deshacer.`);
+            if (confirmado) {
+              await eliminarNivel(nivel.id);
+              cargarLista();
+            }
+          });
+
+          listaNiveles.appendChild(item);
+        });
+      } catch (error) {
+        mensajeLista.textContent = "No se pudieron cargar los retos.";
+        console.error(error);
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (btnGuardar.disabled) return;
+      btnGuardar.disabled = true;
+      mensajeForm.textContent = "Guardando...";
+
+      const esEdicion = campoIdOriginal.value.trim() !== "";
+      const id = campoId.value.trim();
+
+      if (!esEdicion) {
+        try {
+          const yaExiste = await existeNivel(id);
+          if (yaExiste) {
+            mensajeForm.textContent =
+              `⚠ Ya existe un reto con el ID "${id}". No se guardó, para evitar crear un duplicado. ` +
+              `Busca ese reto en la lista de abajo y usa su botón "Editar" en vez de escribir el ID aquí.`;
+            btnGuardar.disabled = false;
+            return;
+          }
+        } catch (error) {
+          mensajeForm.textContent = "No se pudo verificar el ID. Intenta de nuevo.";
+          console.error(error);
+          btnGuardar.disabled = false;
+          return;
+        }
+      }
+
+      const datos = {
+        titulo: campoTitulo.value.trim(),
+        descripcion: campoDescripcion.value.trim(),
+        ejeTematico: campoEje.value,
+        orden: Number(campoOrden.value),
+        puntosOtorga: Number(campoPuntos.value),
+        tipoActividad: campoTipo.value.trim(),
+        insigniaId: campoInsignia.value.trim(),
+        activo: campoActivo.checked,
+      };
+
+      try {
+        const idExcluir = esEdicion ? campoIdOriginal.value.trim() : null;
+        const ordenDuplicado = await existeOrdenEnEje(datos.ejeTematico, datos.orden, idExcluir);
+        if (ordenDuplicado) {
+          const nombreEje = NOMBRES_EJES[datos.ejeTematico] || datos.ejeTematico;
+          mensajeForm.textContent =
+            `⚠ Ya existe otro reto con el orden ${datos.orden} en el eje "${nombreEje}". ` +
+            `No se guardó, para evitar que se vean dos retos con el mismo número. Cambia el orden e intenta de nuevo.`;
+          btnGuardar.disabled = false;
+          return;
+        }
+      } catch (error) {
+        mensajeForm.textContent = "No se pudo verificar el orden. Intenta de nuevo.";
+        console.error(error);
+        btnGuardar.disabled = false;
+        return;
+      }
+
+      const contenidoTexto = campoContenido.value.trim();
+      const tipoActividad = datos.tipoActividad.toLowerCase();
+      const requiereContenido =
+        tipoActividad.includes("quiz") ||
+        tipoActividad.includes("cuestionario") ||
+        tipoActividad.includes("ordenar");
+
+      if (requiereContenido && !contenidoTexto) {
+        mensajeForm.textContent = `El tipo de actividad "${datos.tipoActividad}" necesita contenido JSON (preguntas o pasos). El campo está vacío — pega el JSON antes de guardar.`;
+        btnGuardar.disabled = false;
+        return;
+      }
+
+      const esOrdenar = tipoActividad.includes("ordenar");
+      const esQuiz = tipoActividad.includes("quiz") || tipoActividad.includes("cuestionario");
+      if (esQuiz) datos.pasos = null;
+      if (esOrdenar) datos.preguntas = null;
+      if (!esQuiz && !esOrdenar) {
+        datos.preguntas = null;
+        datos.pasos = null;
+      }
+
+      if (contenidoTexto) {
+        try {
+          const contenidoExtra = JSON.parse(contenidoTexto);
+          Object.assign(datos, contenidoExtra);
+        } catch (err) {
+          mensajeForm.textContent = "El JSON de contenido adicional no es válido. Revisa la sintaxis.";
+          btnGuardar.disabled = false;
+          return;
+        }
+      }
+
+      try {
+        await guardarNivel(id, datos);
+        mensajeForm.textContent = "¡Reto guardado con éxito!";
+        resetearFormulario();
+        cargarLista();
+      } catch (error) {
+        mensajeForm.textContent = "Ocurrió un error al guardar. Intenta de nuevo.";
+        console.error(error);
+      } finally {
+        btnGuardar.disabled = false;
+      }
+    });
+
+    onAuthStateChanged(auth, async (usuario) => {
+      if (!usuario) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const perfil = await obtenerPerfilUsuario(usuario.uid);
+
+      if (!perfil || perfil.rol !== "superadmin") {
+        mensajeCarga.style.display = "none";
+        mensajeSinAcceso.style.display = "block";
+        return;
+      }
+
+      usuarioNombreEl.textContent = perfil.nombre;
+      mensajeCarga.style.display = "none";
+      panelContenido.style.display = "block";
+      cargarLista();
+    });
+  </script>
+</body>
+</html>

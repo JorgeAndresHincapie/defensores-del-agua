@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Juegos — Club Defensores del Agua</title>
+<style>
+  :root {
+    --azul-agua: #0288d1;
+    --azul-oscuro: #01579b;
+    --verde-eco: #2e7d32;
+    --fondo: #e1f5fe;
+    --texto: #01313f;
+    --error: #c62828;
+    --amarillo: #f9a825;
+    --blanco: #ffffff;
+    --sombra: 0 4px 16px rgba(1, 87, 155, 0.14);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--fondo);
+    color: var(--texto);
+    min-height: 100vh;
+  }
+  button { font-family: inherit; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 20px; background: var(--azul-oscuro); color: white;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .marca { display: flex; align-items: center; gap: 10px; }
+  .marca svg { width: 38px; height: 38px; flex: none; }
+  .marca b { display: block; font-size: 1.05rem; }
+  .marca small { opacity: .8; font-size: .8rem; }
+  .puntos {
+    background: rgba(255,255,255,.14); border-radius: 999px; padding: 6px 14px;
+    font-weight: 700; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .derecha { display: flex; align-items: center; gap: 8px; }
+  .grupo-pill { white-space: nowrap; background: white; color: var(--azul-oscuro); border: none; border-radius: 999px; padding: 6px 12px; font-weight: 700; cursor: pointer; font-size: .85rem; }
+  .grupos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .grupo-card {
+    border: none; border-radius: 20px; padding: 24px 20px; text-align: left; cursor: pointer; background: white;
+    box-shadow: var(--sombra); display: flex; flex-direction: column; gap: 10px; color: var(--texto); font-size: 1rem;
+    border-top: 0; min-height: 210px;
+  }
+  .grupo-card:hover, .grupo-card:focus-visible { outline: 4px solid var(--amarillo); }
+  .grupo-card .circ { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; color: white; font-size: 1.6rem; font-weight: 800; }
+  .grupo-card b { font-size: 1.3rem; color: var(--azul-oscuro); }
+  .grupo-card .grados { font-weight: 700; }
+  body.g-primaria { font-size: 18px; }
+  body.g-primaria .reto-btn, body.g-primaria .opcion, body.g-primaria .ficha { font-size: 1.1rem; min-height: 64px; }
+  body.g-primaria .pregunta { font-size: 1.3rem; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { color: var(--azul-oscuro); font-size: 1.6rem; margin: 0 0 6px; }
+  .intro { margin: 0 0 22px; color: #35565f; }
+
+  /* Mapa de ejes */
+  .ejes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .eje {
+    background: white; border-radius: 18px; box-shadow: var(--sombra); padding: 18px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .eje-cab { display: flex; align-items: center; gap: 12px; }
+  .eje-icono { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .eje-icono svg { width: 30px; height: 30px; }
+  .eje h2 { font-size: 1.1rem; margin: 0; color: var(--azul-oscuro); }
+  .eje .conteo { font-size: .8rem; color: #5c7a82; }
+  .reto-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; text-align: left; padding: 12px 14px; border-radius: 12px;
+    border: 2px solid #d6ecf7; background: #f6fbfe; color: var(--texto); cursor: pointer;
+    font-size: .95rem; min-height: 52px;
+  }
+  .reto-btn:hover, .reto-btn:focus-visible { border-color: var(--azul-agua); outline: none; }
+  .reto-btn .tipo { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #5c7a82; display: block; }
+  .reto-btn .hecho { color: var(--verde-eco); font-weight: 700; }
+  .nota {
+    margin-top: 26px; background: white; border-radius: 14px; padding: 16px 18px;
+    box-shadow: var(--sombra); font-size: .92rem; color: #35565f;
+  }
+
+  /* Pantalla de juego */
+  .juego { background: white; border-radius: 18px; box-shadow: var(--sombra); padding: 22px; }
+  .volver {
+    background: none; border: none; color: var(--azul-agua); font-weight: 700; font-size: 1rem;
+    cursor: pointer; padding: 6px 0; margin-bottom: 8px;
+  }
+  .etiqueta {
+    display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    background: var(--fondo); color: var(--azul-oscuro); padding: 4px 10px; border-radius: 6px;
+  }
+  .juego h1 { margin-top: 10px; }
+  .instruccion { font-size: 1.05rem; margin: 6px 0 16px; }
+  .barra { height: 10px; background: #e3eef3; border-radius: 99px; overflow: hidden; margin-bottom: 18px; }
+  .barra i { display: block; height: 100%; width: 0; background: var(--verde-eco); transition: width .4s; }
+  .feedback { min-height: 28px; font-weight: 700; margin: 14px 0 0; }
+  .feedback.ok { color: var(--verde-eco); }
+  .feedback.mal { color: var(--error); }
+  .dato {
+    background: #e8f5e9; color: #1b5e20; border-radius: 12px; padding: 12px 14px; margin-top: 12px;
+    font-size: .95rem; display: none;
+  }
+  .dato.ver { display: block; animation: aparecer .35s ease; }
+  .final {
+    text-align: center; padding: 18px 10px 4px; display: none;
+  }
+  .final.ver { display: block; animation: aparecer .4s ease; }
+  .final svg { width: 90px; height: 90px; }
+  .final h2 { color: var(--verde-eco); margin: 8px 0 4px; }
+  .btn {
+    border: none; border-radius: 12px; padding: 14px 22px; font-size: 1rem; font-weight: 700;
+    cursor: pointer; min-height: 50px;
+  }
+  .btn-verde { background: var(--verde-eco); color: white; }
+  .btn-azul { background: var(--azul-agua); color: white; }
+  .btn-claro { background: var(--fondo); color: var(--azul-oscuro); }
+  .acciones { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+
+  /* Ordenar */
+  .ranuras { display: grid; gap: 8px; margin-bottom: 16px; }
+  .ranura {
+    min-height: 58px; border: 2px dashed #9cc9df; border-radius: 12px; display: flex; align-items: center;
+    gap: 10px; padding: 6px 10px; background: #f6fbfe;
+  }
+  .ranura .num {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--azul-oscuro); color: white;
+    display: grid; place-items: center; font-weight: 700; flex: none;
+  }
+  .ranura.llena { border-style: solid; border-color: var(--azul-agua); background: white; }
+  .ranura.ok { border-color: var(--verde-eco); background: #f1f8f2; }
+  .ranura.mal { border-color: var(--error); animation: sacudir .4s; }
+  .fichas { display: flex; flex-wrap: wrap; gap: 10px; }
+  .ficha {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px;
+    background: white; border: 2px solid #b9dcee; cursor: pointer; font-size: .98rem; color: var(--texto);
+    min-height: 52px; text-align: left;
+  }
+  .ficha:hover, .ficha:focus-visible { border-color: var(--azul-agua); outline: none; }
+  .ficha svg { width: 30px; height: 30px; flex: none; }
+  .ranura .ficha { border: none; padding: 0; min-height: 0; flex: 1; background: transparent; }
+
+  /* Clasificar */
+  .cola { display: flex; justify-content: center; margin: 4px 0 18px; min-height: 120px; }
+  .objeto {
+    width: 150px; height: 120px; border-radius: 16px; background: white; border: 3px solid var(--azul-agua);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    font-weight: 700; text-align: center; padding: 8px; animation: aparecer .3s ease;
+  }
+  .objeto svg { width: 54px; height: 54px; }
+  .objeto.mal { animation: sacudir .4s; border-color: var(--error); }
+  .canecas { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .caneca {
+    border: none; border-radius: 16px; padding: 14px 10px; cursor: pointer; color: white; font-weight: 700;
+    display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: .95rem; min-height: 150px;
+  }
+  .caneca svg { width: 60px; height: 70px; }
+  .caneca small { font-weight: 400; opacity: .92; }
+  .caneca:focus-visible { outline: 4px solid var(--amarillo); }
+  .caneca.blanca { background: #eceff1; color: var(--texto); border: 2px solid #b0bec5; }
+  .caneca.negra { background: #263238; }
+  .caneca.verde { background: #2e7d32; }
+  .caneca.salto { animation: salto .35s; }
+
+  /* Escena */
+  .escena-wrap { position: relative; border-radius: 16px; overflow: hidden; background: #fffef8; border: 2px solid #d6ecf7; }
+  .escena-wrap svg { display: block; width: 100%; height: auto; }
+  .punto { cursor: pointer; }
+  .punto .halo { fill: rgba(2, 136, 209, 0); stroke: rgba(2,136,209,0); stroke-width: 3; transition: all .2s; }
+  .punto:hover .halo, .punto:focus .halo { fill: rgba(249,168,37,.18); stroke: rgba(249,168,37,.9); }
+  .explorar .punto .halo { fill: rgba(249,168,37,.08); stroke: rgba(249,168,37,.8); stroke-dasharray: 6 5; }
+  .punto.encontrado .halo { fill: rgba(46,125,50,.18); stroke: #2e7d32; }
+  .punto:focus { outline: none; }
+  .marcador { display: none; }
+  .punto.encontrado .marcador { display: inline; }
+  .punto.encontrado .pregunta-m { display: none; }
+  .contador { display: flex; gap: 8px; margin: 12px 0 0; flex-wrap: wrap; }
+  .gota { width: 28px; height: 28px; }
+
+  /* Cuestionario */
+  .pregunta { font-size: 1.15rem; font-weight: 700; margin: 0 0 14px; }
+  .opciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .opcion {
+    border: 2px solid #b9dcee; background: white; border-radius: 14px; padding: 14px; cursor: pointer;
+    font-size: 1rem; text-align: left; display: flex; gap: 10px; align-items: center; color: var(--texto); min-height: 60px;
+  }
+  .opcion:hover, .opcion:focus-visible { border-color: var(--azul-agua); outline: none; }
+  .opcion .letra {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--fondo); color: var(--azul-oscuro);
+    display: grid; place-items: center; font-weight: 700; flex: none;
+  }
+  .opcion.ok { border-color: var(--verde-eco); background: #f1f8f2; }
+  .opcion.mal { border-color: var(--error); animation: sacudir .4s; }
+  .opcion:disabled { cursor: default; }
+
+  /* Parejas */
+  .tablero { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .carta {
+    aspect-ratio: 4 / 3; border-radius: 14px; border: none; cursor: pointer; perspective: 600px;
+    background: transparent; padding: 0; font-size: .92rem; position: relative;
+  }
+  .carta .cara {
+    position: absolute; inset: 0; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 10px; font-weight: 700; transition: transform .35s; backface-visibility: hidden;
+  }
+  .carta .dorso { background: var(--azul-agua); color: white; }
+  .carta .dorso svg { width: 40px; height: 40px; }
+  .carta .frente { background: white; border: 2px solid #b9dcee; color: var(--texto); transform: rotateY(180deg); }
+  .carta.volteada .dorso { transform: rotateY(180deg); }
+  .carta.volteada .frente { transform: rotateY(360deg); }
+  .carta.par .frente { border-color: var(--verde-eco); background: #f1f8f2; }
+  .carta:focus-visible { outline: 4px solid var(--amarillo); }
+
+  @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes sacudir { 0%,100% { transform: none; } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  @keyframes salto { 50% { transform: scale(1.06); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @media (max-width: 560px) {
+    .marca small { display: none; }
+    h1 { font-size: 1.35rem; }
+    .juego { padding: 16px; }
+  }
+  /* ---- v2 ---- */
+  .eje { cursor: pointer; border: none; text-align: left; font: inherit; color: inherit; }
+  .eje:hover, .eje:focus-visible { outline: 4px solid var(--amarillo); }
+  .eje .mini-barra { height: 8px; background: #e3eef3; border-radius: 99px; overflow: hidden; }
+  .eje .mini-barra i { display: block; height: 100%; background: var(--verde-eco); }
+  .cab-eje { display: flex; align-items: center; gap: 14px; margin: 6px 0 14px; }
+  .cab-eje .eje-icono { width: 64px; height: 64px; }
+  .cab-eje h1 { margin: 0; }
+  .seccion-t { font-size: 1.05rem; color: var(--azul-oscuro); margin: 22px 0 10px; }
+  .asignados { background: #fff8e1; border: 2px solid #ffe082; border-radius: 16px; padding: 4px 16px 16px; margin: 0 0 22px; }
+  .asignados .seccion-t { margin-top: 14px; }
+  .asignados .sub { margin: -4px 0 12px; color: #6d5a00; font-size: .9rem; }
+  .niveles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .nivel {
+    background: white; border: none; border-radius: 16px; box-shadow: var(--sombra); padding: 14px 12px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; font: inherit; color: var(--texto); min-height: 150px;
+  }
+  .nivel[hidden] { display: none; }
+  .nivel:hover, .nivel:focus-visible { outline: 4px solid var(--amarillo); }
+  .nivel .bola { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; color: white; font-weight: 800; font-size: 1.1rem; }
+  .nivel.hecho .bola { background: var(--verde-eco) !important; }
+  .nivel .t { font-size: .88rem; font-weight: 600; line-height: 1.25; }
+  .nivel .tipo { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: #5c7a82; }
+  .nivel .est { color: var(--amarillo); letter-spacing: 2px; font-size: .9rem; min-height: 1em; }
+  .ruta-wrap { border-radius: 16px; overflow: hidden; border: 2px solid #d6ecf7; margin-bottom: 16px; }
+  .ruta-wrap svg { display: block; width: 100%; height: auto; }
+  #avatar { transition: transform .8s cubic-bezier(.5,1.6,.5,1); }
+  .contexto { background: var(--fondo); border-radius: 12px; padding: 10px 14px; margin: 0 0 12px; font-size: .95rem; }
+  .reto-card { display: flex; gap: 16px; align-items: flex-start; background: var(--fondo); border-radius: 16px; padding: 18px; }
+  .reto-card svg { width: 64px; height: 64px; flex: none; }
+  .estrellas { font-size: 2rem; color: var(--amarillo); letter-spacing: 6px; }
+  .aviso { font-size: .85rem; color: #5c7a82; margin-top: 18px; }
+  .buscar { width: 100%; padding: 12px 14px; border-radius: 12px; border: 2px solid #b9dcee; font-size: 1rem; margin-bottom: 4px; }
+
+  /* ---- arrastrar ---- */
+  .dd-zonas { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .dd-zona { border: 3px dashed var(--c); background: white; border-radius: 16px; min-height: 130px; padding: 10px; display: flex; flex-direction: column; gap: 8px; align-items: stretch; text-align: left; cursor: pointer; font: inherit; color: var(--texto); transition: transform .15s, background .15s; }
+  .dd-cab { font-weight: 800; color: var(--c); display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+  .dd-emo { font-size: 1.6rem; }
+  .dd-dentro { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dd-zona.hover, .dd-zona-d.hover { background: #fffde7; transform: scale(1.02); }
+  .dd-zona.mal, .dd-zona-d.mal { animation: sacudir .4s; }
+  .dd-bandeja { display: flex; flex-wrap: wrap; gap: 10px; min-height: 20px; }
+  .dd-chip { touch-action: none; user-select: none; -webkit-user-select: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; background: white; border: 2px solid #b9dcee; font: inherit; font-size: .98rem; cursor: grab; min-height: 48px; color: var(--texto); box-shadow: 0 2px 6px rgba(1,87,155,.12); text-align: left; }
+  .dd-chip > span:first-child { font-size: 1.4rem; }
+  .dd-chip.sel { outline: 3px solid var(--amarillo); border-color: var(--amarillo); }
+  .dd-chip.origen { opacity: .35; }
+  .dd-chip.puesto { cursor: default; border-color: var(--verde-eco); background: #f1f8f2; font-size: .85rem; min-height: 0; padding: 6px 10px; box-shadow: none; }
+  .dd-chip.puesto > span:first-child { font-size: 1.05rem; }
+  .dd-chip.mal { animation: sacudir .4s; border-color: var(--error); }
+  .dd-fantasma { position: fixed; z-index: 100; pointer-events: none; transform: rotate(-3deg); box-shadow: 0 10px 24px rgba(0,0,0,.25); margin: 0; }
+  .dd-diagrama { max-width: 620px; margin: 0 auto; position: relative; border-radius: 16px; overflow: hidden; border: 2px solid #d6ecf7; }
+  .dd-diagrama svg { display: block; width: 100%; height: auto; }
+  .dd-zona-d .dd-dentro { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+  .dd-titulo { font-weight: 800; font-size: .8rem; color: var(--azul-oscuro); opacity: .75; }
+  .dd-bandeja, .dd-zonas, .dd-diagrama { user-select: none; -webkit-user-select: none; }
+  .dd-zona-d { position: absolute; border: 3px dashed rgba(1,87,155,.6); background: rgba(255,255,255,.22); border-radius: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center; padding: 2px; transition: transform .15s, background .15s; }
+  .dd-zona-d.ok { border: 3px solid var(--verde-eco); background: rgba(241,248,242,.82); cursor: default; }
+  .dd-nom { font-weight: 800; font-size: .85rem; color: var(--azul-oscuro); background: rgba(255,255,255,.88); border-radius: 8px; padding: 2px 6px; text-align: center; }
+
+  /* ---- historia ---- */
+  .tira { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tira i { width: 34px; height: 26px; border-radius: 6px; border: 2px solid #b9dcee; background: white; display: grid; place-items: center; font-style: normal; font-size: .75rem; font-weight: 700; color: #90a4ae; }
+  .tira i.hecha { background: var(--verde-eco); border-color: var(--verde-eco); color: white; }
+  .tira i.actual { border-color: var(--azul-agua); color: var(--azul-agua); }
+  .viñeta { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: end; background: linear-gradient(#e1f5fe, #fff); border: 3px solid #01579b; border-radius: 18px; padding: 16px; margin-bottom: 14px; }
+  .viñeta svg { width: 150px; height: 190px; }
+  .globo { position: relative; background: white; border: 3px solid #01579b; border-radius: 20px; padding: 14px 16px; font-size: 1.08rem; font-weight: 600; align-self: start; }
+  .globo::after { content: ""; position: absolute; left: -16px; bottom: 22px; border: 10px solid transparent; border-right-color: #01579b; border-left: 0; }
+  .globo .rol { display: block; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; color: var(--azul-agua); margin-bottom: 4px; }
+  .respuestas { display: grid; gap: 10px; }
+  .resp { justify-self: end; max-width: 92%; background: #e8f5e9; border: 2px solid #a5d6a7; border-radius: 18px 18px 4px 18px; padding: 12px 16px; font: inherit; font-size: 1rem; text-align: left; cursor: pointer; color: var(--texto); min-height: 48px; }
+  .resp:hover, .resp:focus-visible { border-color: var(--verde-eco); outline: none; }
+  .resp.ok { background: var(--verde-eco); color: white; border-color: var(--verde-eco); }
+  .resp.mal { border-color: var(--error); background: #ffebee; animation: sacudir .4s; }
+  @media (max-width: 560px) { .viñeta { grid-template-columns: 90px 1fr; } .viñeta svg { width: 90px; height: 120px; } }
+
+  /* ---- simuladores ---- */
+  .sim { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.2fr); gap: 18px; align-items: start; }
+  .sim-dibujo { background: #f6fbfe; border: 2px solid #d6ecf7; border-radius: 16px; overflow: hidden; position: sticky; top: 76px; }
+  .sim-dibujo svg { display: block; width: 100%; height: auto; }
+  .sim-panel { display: flex; flex-direction: column; gap: 12px; }
+  .sim-mision { background: #fff8e1; border: 2px solid #ffe082; border-radius: 12px; padding: 10px 12px; }
+  .sim-mision.ok { background: #e8f5e9; border-color: #a5d6a7; }
+  .sim-mision.ok b::after { content: " ✓"; color: var(--verde-eco); }
+  .sim-ctrl { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+  .sim-ctrl input { grid-column: 1 / -1; width: 100%; accent-color: var(--azul-agua); height: 28px; }
+  .sim-ctrl small { grid-column: 1 / -1; color: #5c7a82; font-size: .8rem; }
+  .sim-lab { font-weight: 600; font-size: .95rem; }
+  .sim-val { font-weight: 800; color: var(--azul-oscuro); white-space: nowrap; }
+  .sim-sw { display: flex; align-items: center; gap: 10px; background: white; border: 2px solid #b9dcee; border-radius: 12px; padding: 10px 12px; font: inherit; font-size: .95rem; cursor: pointer; text-align: left; color: var(--texto); min-height: 48px; }
+  .sim-sw .sw { width: 40px; height: 22px; border-radius: 99px; background: #cfd8dc; position: relative; flex: none; transition: background .2s; }
+  .sim-sw .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: white; transition: left .2s; }
+  .sim-sw.on { border-color: var(--verde-eco); }
+  .sim-sw.on .sw { background: var(--verde-eco); }
+  .sim-sw.on .sw::after { left: 21px; }
+  .sim-res { display: grid; gap: 6px; background: var(--fondo); border-radius: 12px; padding: 10px 12px; }
+  .sim-res div { display: flex; justify-content: space-between; gap: 10px; font-size: .92rem; }
+  .sim-res div.dest { font-size: 1.05rem; }
+  .sim-res div.dest b { color: var(--azul-oscuro); }
+  .sim-nota { font-size: .82rem; color: #5c7a82; margin: 0; }
+  @media (max-width: 700px) { .sim { grid-template-columns: 1fr; } .sim-dibujo { position: static; max-width: 340px; margin: 0 auto; width: 100%; } }
+
+  /* ---- bitácoras ---- */
+  .bit { display: flex; flex-direction: column; gap: 14px; }
+  .bit-graf { background: #f6fbfe; border: 2px solid #d6ecf7; border-radius: 16px; overflow: hidden; }
+  .bit-graf svg { display: block; width: 100%; height: auto; }
+  .bit-leyenda { display: flex; gap: 14px; flex-wrap: wrap; padding: 6px 12px 10px; font-size: .85rem; }
+  .bit-leyenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .bit-tabla { display: grid; gap: 8px; }
+  .bit-fila { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: white; border: 2px solid #e3eef3; border-radius: 12px; padding: 8px 12px; }
+  .bit-dia { font-weight: 800; color: var(--azul-oscuro); width: 56px; flex: none; }
+  .bit-campo { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; font-size: .9rem; }
+  .bit-campo span { flex: 1; }
+  .bit-campo input, .bit-form input[type=text], .bit-form input[type=number] { width: 110px; padding: 10px; border: 2px solid #b9dcee; border-radius: 10px; font: inherit; font-size: 1rem; }
+  .bit-estado { background: var(--fondo); border-radius: 12px; padding: 10px 14px; font-size: .95rem; }
+  .bit-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: white; border: 2px solid #e3eef3; border-radius: 12px; padding: 12px; }
+  .bit-form input[type=text] { flex: 1; min-width: 180px; width: auto; }
+  .bit-check { display: flex; align-items: center; gap: 6px; font-size: .92rem; }
+  .bit-check input { width: 20px; height: 20px; }
+  .bit-lista { display: grid; gap: 6px; }
+  .bit-item { display: flex; align-items: center; gap: 10px; background: white; border: 2px solid #e3eef3; border-radius: 10px; padding: 8px 12px; }
+  .bit-item .n { width: 26px; height: 26px; border-radius: 50%; background: var(--azul-agua); color: white; display: grid; place-items: center; font-weight: 700; font-size: .8rem; flex: none; }
+  .bit-item span:nth-child(2) { flex: 1; }
+  .bit-borrar { border: none; background: #ffebee; color: var(--error); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; }
+
+</style>
+<link rel="manifest" href="../manifest.json" />
+<script type="module" src="progreso.js" data-progreso></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="marca">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#0288d1"/><path d="M20 7c5 7 9 11.5 9 16a9 9 0 0 1-18 0c0-4.5 4-9 9-16z" fill="#fff"/><path d="M15.5 24a4.5 4.5 0 0 0 4.5 4.5" stroke="#0288d1" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    <div><b>Club Defensores del Agua</b><small><a href="../dashboard.html" style="color:#b3e5fc">← Volver al mapa</a> · <span id="nombre-usuario"></span></small></div>
+  </div>
+  <div class="derecha"><button id="btn-grupo" class="grupo-pill" type="button" hidden></button><div class="puntos" aria-live="polite">⭐ <span id="total-puntos">0</span> pts</div></div>
+</header>
+<main id="app"></main>
+
+<script src="autorados.js"></script>
+<script src="simuladores.js"></script>
+<script src="bitacoras.js"></script>
+<script>
+/* =========================================================================
+   Club Defensores del Agua · Juegos (v2)
+   Las actividades vienen de actividades.json, exportado de la colección
+   "niveles" de Firestore y normalizado: cada actividad tiene id, eje, orden,
+   titulo, desc, pts, grupo y su contenido (preguntas o pasos).
+   El motor elige el juego gráfico según el contenido:
+     - preguntas  -> Ruta del Defensor (trivia con avatar que avanza)
+     - pasos      -> Ordenar (y luego las preguntas, si las tiene)
+     - sin datos  -> Reto práctico
+   ========================================================================= */
+
+const EJES = {
+  "acueducto":        { nombre: "El viaje del agua",  color: "#0288d1", icono: "gota",     tema: "agua" },
+  "fuentes-hidricas": { nombre: "Fuentes hídricas",   color: "#00838f", icono: "rio2",     tema: "agua" },
+  "ahorro-agua":      { nombre: "Ahorro del agua",    color: "#00897b", icono: "grifoB",   tema: "agua" },
+  "pago-servicios":   { nombre: "Cultura de pago",    color: "#f9a825", icono: "factura",  tema: "ciudad" },
+  "residuos-solidos": { nombre: "Residuos sólidos",   color: "#2e7d32", icono: "reciclaje",tema: "ciudad" },
+  "energia":          { nombre: "Energía",            color: "#ef6c00", icono: "rayo",     tema: "ciudad" },
+  "huella-ecologica": { nombre: "Huella ecológica",   color: "#6d4c41", icono: "huella",   tema: "ciudad" },
+  "reforestacion":    { nombre: "Reforestación",      color: "#388e3c", icono: "arbol",    tema: "bosque" },
+  "biodiversidad":    { nombre: "Biodiversidad",      color: "#689f38", icono: "hoja",     tema: "bosque" },
+  "alimentacion":     { nombre: "Alimentación",       color: "#d84315", icono: "manzana",  tema: "campo" },
+};
+const EQUIV_EJE_V1 = { "acueducto": "acueducto", "pago-servicios": "pago-servicios", "ahorro-agua": "ahorro-agua", "residuos-solidos": "residuos-solidos" };
+
+const GRUPOS = {
+  primaria: { nombre: "Primaria", grados: "1.° a 5.°", color: "#f9a825", texto: "Juegos con dibujos, pocas opciones y frases cortas." },
+  basica:   { nombre: "Básica secundaria", grados: "6.° a 9.°", color: "#0288d1", texto: "Retos de comprensión: procesos, hábitos y cuidado del ambiente." },
+  media:    { nombre: "Media", grados: "10.° y 11.°", color: "#2e7d32", texto: "Retos técnicos: cálculos, análisis y propuestas para la comunidad." },
+};
+
+/* Juegos especiales de la primera versión (escenas, clasificar, parejas) */
+const ACTIVIDADES_V1 = [
+  {
+    id: "acueducto-01", grupos: ["basica"], ejeTematico: "acueducto", orden: 1, puntosOtorga: 20,
+    titulo: "Del río a tu casa", tipoActividad: "ordenar",
+    descripcion: "Ordena el recorrido del agua desde la bocatoma hasta el grifo.",
+    juego: {
+      tipo: "ordenar",
+      instruccion: "Toca las tarjetas en orden, desde la bocatoma hasta tu casa. Si te equivocas, toca una tarjeta colocada para devolverla.",
+      pasos: [
+        { texto: "Bocatoma: captación del agua", icono: "rio" },
+        { texto: "Aducción: viaje hasta la planta", icono: "tubo" },
+        { texto: "Planta de tratamiento: potabilización", icono: "planta" },
+        { texto: "Tanque de almacenamiento", icono: "tanque" },
+        { texto: "Red de distribución", icono: "red" },
+        { texto: "Grifo de tu casa", icono: "grifo" },
+      ],
+      dato: "El agua del río no se puede tomar directamente: en la planta se limpia y se desinfecta para que sea potable.",
+    },
+  },
+  {
+    id: "acueducto-02", grupos: ["basica"], ejeTematico: "acueducto", orden: 2, puntosOtorga: 20,
+    titulo: "¿Qué pasa en la planta?", tipoActividad: "cuestionario",
+    descripcion: "Responde preguntas sobre cómo se potabiliza el agua.",
+    juego: {
+      tipo: "cuestionario",
+      preguntas: [
+        { pregunta: "¿Para qué sirve la planta de tratamiento?", opciones: ["Para calentar el agua", "Para volver el agua apta para el consumo", "Para guardar el agua de lluvia", "Para medir cuánta agua gastas"], correcta: 1, explicacion: "La planta potabiliza el agua: retira la suciedad y elimina los microorganismos." },
+        { pregunta: "¿Dónde se capta el agua para el acueducto?", opciones: ["En la bocatoma", "En el grifo", "En el medidor", "En el alcantarillado"], correcta: 0, explicacion: "La bocatoma es la estructura que toma el agua del río o de la quebrada." },
+        { pregunta: "¿Para qué sirve el tanque de almacenamiento?", opciones: ["Para lavar la ropa", "Para guardar agua tratada y mantener la presión", "Para recoger la basura", "Para producir energía"], correcta: 1, explicacion: "El tanque guarda agua ya tratada para que llegue a las casas aunque el consumo cambie durante el día." },
+      ],
+    },
+  },
+  {
+    id: "pago-01", grupos: ["basica"], ejeTematico: "pago-servicios", orden: 1, puntosOtorga: 15,
+    titulo: "Conoce tu factura", tipoActividad: "explorar",
+    descripcion: "Descubre qué significa cada parte de la factura del agua.",
+    juego: {
+      tipo: "escena", modo: "explorar", escena: "factura",
+      instruccion: "Toca cada parte resaltada de la factura para descubrir qué significa.",
+      puntos: [
+        { id: "titular", x: 225, y: 68, w: 300, h: 52, titulo: "Datos del suscriptor", texto: "Nombre y dirección de la vivienda que recibe el servicio." },
+        { id: "consumo", x: 95, y: 150, w: 160, h: 110, titulo: "Consumo del mes", texto: "Cuánta agua se gastó, medida en metros cúbicos (m³). Un metro cúbico son 1.000 litros." },
+        { id: "lectura", x: 345, y: 150, w: 170, h: 110, titulo: "Lecturas del medidor", texto: "La lectura anterior y la actual. La diferencia entre las dos es el consumo." },
+        { id: "valor", x: 95, y: 275, w: 160, h: 85, titulo: "Total a pagar", texto: "Lo que cuesta el servicio del mes. Pagarlo a tiempo mantiene el acueducto funcionando." },
+        { id: "fecha", x: 345, y: 275, w: 170, h: 85, titulo: "Fecha límite de pago", texto: "Hasta qué día se puede pagar sin recargos ni riesgo de suspensión." },
+      ],
+      dato: "Revisar la factura cada mes ayuda a detectar fugas: si el consumo sube sin razón, puede haber un daño en la casa.",
+    },
+  },
+  {
+    id: "pago-02", grupos: ["basica"], ejeTematico: "pago-servicios", orden: 2, puntosOtorga: 15,
+    titulo: "Lee el medidor", tipoActividad: "cuestionario",
+    descripcion: "Calcula el consumo a partir de las lecturas del medidor.",
+    juego: {
+      tipo: "cuestionario",
+      preguntas: [
+        { pregunta: "La lectura anterior fue 1.250 m³ y la actual es 1.268 m³. ¿Cuánto se consumió?", opciones: ["18 m³", "28 m³", "1.268 m³", "8 m³"], correcta: 0, explicacion: "Se resta la lectura anterior de la actual: 1.268 − 1.250 = 18 m³." },
+        { pregunta: "¿Cuántos litros hay en 1 m³ de agua?", opciones: ["10 litros", "100 litros", "1.000 litros", "10.000 litros"], correcta: 2, explicacion: "Un metro cúbico equivale a 1.000 litros." },
+        { pregunta: "¿Por qué es importante pagar la factura a tiempo?", opciones: ["Porque así el agua sabe mejor", "Para evitar recargos y que el acueducto pueda seguir prestando el servicio", "Porque si no, el medidor se daña", "No es importante"], correcta: 1, explicacion: "El pago oportuno evita recargos y financia la operación y el mantenimiento del acueducto." },
+      ],
+    },
+  },
+  {
+    id: "ahorro-01", grupos: ["primaria", "basica"], ejeTematico: "ahorro-agua", orden: 1, puntosOtorga: 25,
+    titulo: "Casa sin fugas", tipoActividad: "buscar",
+    descripcion: "Encuentra los desperdicios de agua escondidos en la casa.",
+    juego: {
+      tipo: "escena", modo: "buscar", escena: "casa",
+      instruccion: "Hay 5 desperdicios de agua en esta casa. Tócalos para encontrarlos.",
+      puntos: [
+        { id: "llave", x: 118, y: 168, r: 42, titulo: "Grifo goteando", texto: "Una gota tras otra se convierte en muchos litros al día. Avisa a un adulto para cambiar el empaque." },
+        { id: "ducha", x: 268, y: 120, r: 46, titulo: "Ducha abierta sin nadie", texto: "Cierra la ducha mientras te enjabonas y báñate en pocos minutos." },
+        { id: "inodoro", x: 300, y: 262, r: 44, titulo: "Inodoro con fuga", texto: "Si el agua sigue corriendo en la taza, el tanque tiene una fuga. Hay que repararlo." },
+        { id: "manguera", x: 505, y: 300, r: 50, titulo: "Lavar el carro con manguera", texto: "Usa un balde: se gasta mucha menos agua." },
+        { id: "cepillo", x: 472, y: 150, r: 46, titulo: "Cepillarse con la llave abierta", texto: "Cierra la llave mientras te cepillas y usa un vaso para enjuagarte." },
+      ],
+      dato: "Los pequeños hábitos de cada persona, sumados en toda la comunidad, ahorran muchísima agua.",
+    },
+  },
+  {
+    id: "ahorro-02", grupos: ["basica"], ejeTematico: "ahorro-agua", orden: 2, puntosOtorga: 20,
+    titulo: "Problema y solución", tipoActividad: "parejas",
+    descripcion: "Une cada desperdicio con la forma de evitarlo.",
+    juego: {
+      tipo: "parejas",
+      instruccion: "Voltea dos cartas a la vez. Une cada problema (💧) con su solución (✅).",
+      pares: [
+        ["💧 Grifo goteando", "✅ Cambiar el empaque"],
+        ["💧 Ducha muy larga", "✅ Bañarse en pocos minutos"],
+        ["💧 Lavar el carro con manguera", "✅ Usar un balde"],
+        ["💧 Regar las plantas al mediodía", "✅ Regar temprano o al atardecer"],
+        ["💧 Lavadora a media carga", "✅ Lavar con la carga completa"],
+        ["💧 Agua lluvia que se pierde", "✅ Recogerla para regar o lavar"],
+      ],
+      dato: "Regar temprano o al atardecer evita que el sol evapore el agua antes de que llegue a las raíces.",
+    },
+  },
+  {
+    id: "residuos-01", grupos: ["basica"], ejeTematico: "residuos-solidos", orden: 1, puntosOtorga: 25,
+    titulo: "Cada residuo en su caneca", tipoActividad: "clasificar",
+    descripcion: "Separa los residuos según el código de colores.",
+    juego: {
+      tipo: "clasificar",
+      instruccion: "Toca la caneca correcta para cada residuo.",
+      grupos: [
+        { id: "blanca", nombre: "Blanca", ayuda: "Aprovechables limpios y secos" },
+        { id: "negra", nombre: "Negra", ayuda: "No aprovechables" },
+        { id: "verde", nombre: "Verde", ayuda: "Orgánicos aprovechables" },
+      ],
+      items: [
+        { texto: "Botella plástica limpia", icono: "botella", grupo: "blanca" },
+        { texto: "Cáscara de banano", icono: "banano", grupo: "verde" },
+        { texto: "Servilleta usada", icono: "servilleta", grupo: "negra" },
+        { texto: "Hoja de cuaderno", icono: "papel", grupo: "blanca" },
+        { texto: "Restos de comida", icono: "comida", grupo: "verde" },
+        { texto: "Papel higiénico", icono: "servilleta", grupo: "negra" },
+        { texto: "Lata de gaseosa", icono: "lata", grupo: "blanca" },
+        { texto: "Cáscaras de huevo", icono: "huevo", grupo: "verde" },
+      ],
+      dato: "En Colombia el código de colores es: blanca para aprovechables, negra para no aprovechables y verde para orgánicos aprovechables.",
+    },
+  },
+  {
+    id: "residuos-02", grupos: ["basica"], ejeTematico: "residuos-solidos", orden: 2, puntosOtorga: 20,
+    titulo: "Basura y quebradas", tipoActividad: "cuestionario",
+    descripcion: "Relaciona los residuos con el cuidado de las fuentes de agua.",
+    juego: {
+      tipo: "cuestionario",
+      preguntas: [
+        { pregunta: "¿Qué pasa cuando se arroja basura a una quebrada?", opciones: ["Nada, el agua la limpia", "Contamina el agua y puede tapar el cauce", "La basura se vuelve abono", "Aumenta el agua del río"], correcta: 1, explicacion: "La basura contamina el agua, afecta a los animales y puede taponar el cauce y causar inundaciones." },
+        { pregunta: "¿Qué debe ir en la caneca blanca?", opciones: ["Restos de comida", "Papel higiénico", "Plástico, vidrio, metal y papel limpios", "Hojas secas"], correcta: 2, explicacion: "La caneca blanca recibe residuos aprovechables limpios y secos." },
+        { pregunta: "¿Qué se puede hacer con los residuos orgánicos?", opciones: ["Quemarlos", "Tirarlos al río", "Hacer compost (abono)", "Mezclarlos con el plástico"], correcta: 2, explicacion: "Los orgánicos se pueden compostar y convertir en abono para la tierra." },
+      ],
+    },
+  },
+
+  /* ---------------------------- PRIMARIA ---------------------------- */
+  {
+    id: "acueducto-p01", grupos: ["primaria"], ejeTematico: "acueducto", orden: 1, puntosOtorga: 15,
+    titulo: "El camino del agua", tipoActividad: "ordenar",
+    descripcion: "Ordena el camino del agua desde el río hasta tu casa.",
+    juego: {
+      tipo: "ordenar",
+      instruccion: "Toca los dibujos en orden: ¿por dónde pasa el agua antes de llegar a tu casa?",
+      pasos: [
+        { texto: "El río", icono: "rio" },
+        { texto: "La planta que limpia el agua", icono: "planta" },
+        { texto: "El tanque", icono: "tanque" },
+        { texto: "La llave de tu casa", icono: "grifo" },
+      ],
+      dato: "El agua viaja por tubos desde el río hasta tu casa. ¡En la planta la limpian para que puedas tomarla!",
+    },
+  },
+  {
+    id: "pago-p01", grupos: ["primaria"], ejeTematico: "pago-servicios", orden: 1, puntosOtorga: 15,
+    titulo: "¿Quién cuida el agua?", tipoActividad: "cuestionario",
+    descripcion: "Preguntas sencillas sobre el servicio de agua.",
+    juego: {
+      tipo: "cuestionario",
+      preguntas: [
+        { pregunta: "¿Quién lleva el agua limpia hasta las casas?", opciones: ["🚰 El acueducto", "🐦 Los pájaros", "🚌 El bus del colegio", "🌙 La luna"], correcta: 0, explicacion: "El acueducto capta, limpia y lleva el agua hasta cada casa." },
+        { pregunta: "¿Qué papel llega cada mes a la casa para pagar el agua?", opciones: ["📒 Un cuaderno", "🧾 La factura", "📰 El periódico", "✉️ Una carta de un amigo"], correcta: 1, explicacion: "La factura dice cuánta agua gastó la familia y cuánto hay que pagar." },
+        { pregunta: "¿Por qué la familia paga el agua?", opciones: ["Porque es un juego", "Para que el acueducto pueda seguir limpiando y llevando el agua", "Para que llueva más", "No hay que pagarla"], correcta: 1, explicacion: "Con el pago se cuidan los tubos, la planta y el trabajo de las personas del acueducto." },
+      ],
+    },
+  },
+  {
+    id: "ahorro-p02", grupos: ["primaria"], ejeTematico: "ahorro-agua", orden: 2, puntosOtorga: 15,
+    titulo: "Memoria del agua", tipoActividad: "parejas",
+    descripcion: "Encuentra cada problema con su solución.",
+    juego: {
+      tipo: "parejas",
+      instruccion: "Voltea dos cartas. Une cada problema (💧) con lo que puedes hacer (✅).",
+      pares: [
+        ["💧 Llave abierta al cepillarte", "✅ Cerrar la llave"],
+        ["💧 Ducha muy larga", "✅ Bañarse rápido"],
+        ["💧 Llave que gotea", "✅ Avisar a un adulto"],
+        ["💧 Agua de lluvia perdida", "✅ Recogerla para las plantas"],
+      ],
+      dato: "¡Tú también eres un Defensor del Agua cada vez que cierras la llave!",
+    },
+  },
+  {
+    id: "residuos-p01", grupos: ["primaria"], ejeTematico: "residuos-solidos", orden: 1, puntosOtorga: 15,
+    titulo: "Canecas de colores", tipoActividad: "clasificar",
+    descripcion: "Pon cada cosa en la caneca de su color.",
+    juego: {
+      tipo: "clasificar",
+      instruccion: "Toca la caneca correcta para cada cosa.",
+      grupos: [
+        { id: "blanca", nombre: "Blanca", ayuda: "Plástico, papel y latas limpios" },
+        { id: "negra", nombre: "Negra", ayuda: "Lo que no se puede reciclar" },
+        { id: "verde", nombre: "Verde", ayuda: "Restos de comida y cáscaras" },
+      ],
+      items: [
+        { texto: "Botella plástica limpia", icono: "botella", grupo: "blanca" },
+        { texto: "Cáscara de banano", icono: "banano", grupo: "verde" },
+        { texto: "Servilleta usada", icono: "servilleta", grupo: "negra" },
+        { texto: "Hoja de cuaderno", icono: "papel", grupo: "blanca" },
+        { texto: "Restos de comida", icono: "comida", grupo: "verde" },
+        { texto: "Lata de gaseosa", icono: "lata", grupo: "blanca" },
+      ],
+      dato: "Separar la basura ayuda a que el río y la quebrada estén más limpios.",
+    },
+  },
+
+  /* ------------------------------ MEDIA ------------------------------ */
+  {
+    id: "acueducto-m01", grupos: ["media"], ejeTematico: "acueducto", orden: 1, puntosOtorga: 30,
+    titulo: "Ingeniería de la potabilización", tipoActividad: "ordenar",
+    descripcion: "Ordena las etapas de una planta de tratamiento convencional.",
+    juego: {
+      tipo: "ordenar",
+      instruccion: "Ordena las etapas del tratamiento del agua en una planta convencional.",
+      pasos: [
+        { texto: "Captación del agua cruda en la bocatoma", icono: "rio" },
+        { texto: "Coagulación: se agrega coagulante y se mezcla rápido", icono: "planta" },
+        { texto: "Floculación: las partículas se unen en flóculos", icono: "planta" },
+        { texto: "Sedimentación: los flóculos se depositan en el fondo", icono: "planta" },
+        { texto: "Filtración: el agua pasa por lechos de arena y grava", icono: "planta" },
+        { texto: "Desinfección: se eliminan los microorganismos (por ejemplo, con cloro)", icono: "planta" },
+        { texto: "Almacenamiento y distribución", icono: "tanque" },
+      ],
+      dato: "En Colombia la calidad del agua para consumo humano se vigila con el Índice de Riesgo de la Calidad del Agua (IRCA).",
+    },
+  },
+  {
+    id: "pago-m01", grupos: ["media"], ejeTematico: "pago-servicios", orden: 1, puntosOtorga: 30,
+    titulo: "Calcula la factura", tipoActividad: "cuestionario",
+    descripcion: "Usa las lecturas del medidor y una tarifa de ejemplo para calcular el valor del servicio.",
+    juego: {
+      tipo: "cuestionario",
+      preguntas: [
+        { pregunta: "Lectura anterior: 3.405 m³. Lectura actual: 3.427 m³. ¿Cuál fue el consumo del mes?", opciones: ["22 m³", "32 m³", "12 m³", "3.427 m³"], correcta: 0, explicacion: "Consumo = lectura actual − lectura anterior = 3.427 − 3.405 = 22 m³." },
+        { pregunta: "Ejemplo: cargo fijo de $10.000 y $2.000 por cada m³. Si el consumo fue 22 m³, ¿cuánto se paga?", opciones: ["$44.000", "$54.000", "$32.000", "$22.000"], correcta: 1, explicacion: "Total = cargo fijo + consumo × tarifa = 10.000 + 22 × 2.000 = 54.000 (valores de ejemplo)." },
+        { pregunta: "Si la familia arregla una fuga y baja su consumo a 15 m³, con la misma tarifa de ejemplo, ¿cuánto ahorra al mes?", opciones: ["$7.000", "$10.000", "$14.000", "$22.000"], correcta: 2, explicacion: "Ahorra 7 m³ × $2.000 = $14.000 al mes. El cargo fijo no cambia." },
+      ],
+    },
+  },
+  {
+    id: "ahorro-m01", grupos: ["media"], ejeTematico: "ahorro-agua", orden: 1, puntosOtorga: 30,
+    titulo: "Matemáticas del ahorro", tipoActividad: "cuestionario",
+    descripcion: "Calcula el impacto de los hábitos de consumo de agua.",
+    juego: {
+      tipo: "cuestionario",
+      preguntas: [
+        { pregunta: "Una ducha arroja 9 litros por minuto. ¿Cuánta agua se gasta en una ducha de 10 minutos?", opciones: ["19 litros", "90 litros", "900 litros", "9 litros"], correcta: 1, explicacion: "9 L/min × 10 min = 90 litros." },
+        { pregunta: "Si esa persona reduce la ducha a 5 minutos todos los días, ¿cuántos litros ahorra en 30 días?", opciones: ["450 litros", "1.350 litros", "2.700 litros", "45 litros"], correcta: 1, explicacion: "Ahorra 5 min × 9 L/min = 45 litros por día; en 30 días son 1.350 litros." },
+        { pregunta: "¿A cuántos metros cúbicos equivalen esos 1.350 litros?", opciones: ["13,5 m³", "1,35 m³", "0,135 m³", "135 m³"], correcta: 1, explicacion: "1 m³ = 1.000 litros, así que 1.350 L = 1,35 m³." },
+      ],
+    },
+  },
+  {
+    id: "residuos-m01", grupos: ["media"], ejeTematico: "residuos-solidos", orden: 1, puntosOtorga: 30,
+    titulo: "La cadena del reciclaje", tipoActividad: "ordenar",
+    descripcion: "Ordena la cadena de aprovechamiento de un residuo plástico.",
+    juego: {
+      tipo: "ordenar",
+      instruccion: "Ordena la cadena de aprovechamiento de una botella plástica.",
+      pasos: [
+        { texto: "Separación en la fuente (caneca blanca)", icono: "botella" },
+        { texto: "Recolección selectiva", icono: "red" },
+        { texto: "Clasificación en la estación de aprovechamiento", icono: "reciclaje" },
+        { texto: "Lavado y trituración", icono: "planta" },
+        { texto: "Transformación en materia prima", icono: "planta" },
+        { texto: "Fabricación de un nuevo producto", icono: "botella" },
+      ],
+      dato: "Si el residuo se mezcla con orgánicos o se ensucia, pierde valor y puede terminar en el relleno sanitario.",
+    },
+  },
+];
+
+/* ======================= ICONOS (SVG en línea) ========================== */
+const ICONOS = {
+  gota: '<svg viewBox="0 0 32 32"><path d="M16 3c5 7 9 11.5 9 16a9 9 0 0 1-18 0c0-4.5 4-9 9-16z" fill="#fff"/></svg>',
+  factura: '<svg viewBox="0 0 32 32"><path d="M8 3h16v26l-3-2-2.5 2-2.5-2-2.5 2-2.5-2-3 2z" fill="#fff"/><path d="M12 10h8M12 15h8M12 20h5" stroke="#f9a825" stroke-width="2" stroke-linecap="round"/></svg>',
+  grifo: '<svg viewBox="0 0 32 32"><path d="M5 10h14v4H5zM17 8h6v10h-6z" fill="#0288d1"/><path d="M11 6h4v4h-4z" fill="#0288d1"/><path d="M20 21c1.6 2.2 2.4 3.6 2.4 4.6a2.4 2.4 0 0 1-4.8 0c0-1 .8-2.4 2.4-4.6z" fill="#4fc3f7"/></svg>',
+  reciclaje: '<svg viewBox="0 0 32 32"><path d="M16 4l5 8h-3.5v3h-3v-3H11zM6 22l3.5-8.5 3 1.8-1.8 3.2H14v3zM26 22h-7v3l-5-5 5-5v3h3.2l-1.6-2.8 3-1.7z" fill="#fff"/></svg>',
+  rio: '<svg viewBox="0 0 32 32"><path d="M2 12c4-3 8 3 12 0s8 3 12 0 4 0 4 0M2 19c4-3 8 3 12 0s8 3 12 0 4 0 4 0" stroke="#0288d1" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4 26h24" stroke="#6d4c41" stroke-width="3" stroke-linecap="round"/></svg>',
+  tubo: '<svg viewBox="0 0 32 32"><rect x="2" y="12" width="28" height="8" rx="2" fill="#78909c"/><rect x="8" y="10" width="3" height="12" fill="#546e7a"/><rect x="21" y="10" width="3" height="12" fill="#546e7a"/><path d="M14 16h4" stroke="#4fc3f7" stroke-width="3" stroke-linecap="round"/></svg>',
+  planta: '<svg viewBox="0 0 32 32"><rect x="3" y="14" width="12" height="12" rx="2" fill="#0288d1"/><rect x="17" y="10" width="12" height="16" rx="2" fill="#01579b"/><path d="M6 19h6M20 15h6M20 20h6" stroke="#b3e5fc" stroke-width="2"/><path d="M9 4l2 6H7z" fill="#2e7d32"/></svg>',
+  tanque: '<svg viewBox="0 0 32 32"><ellipse cx="16" cy="9" rx="10" ry="4" fill="#90a4ae"/><path d="M6 9v12c0 2.2 4.5 4 10 4s10-1.8 10-4V9" fill="#b0bec5"/><path d="M8 16c3 2 13 2 16 0v5c-3 2-13 2-16 0z" fill="#4fc3f7"/><path d="M10 25l-2 5M22 25l2 5" stroke="#546e7a" stroke-width="2"/></svg>',
+  red: '<svg viewBox="0 0 32 32"><path d="M4 16h24M10 16v-8h-5M10 16v8h-5M22 16v-8h5M22 16v8h5" stroke="#0288d1" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="16" cy="16" r="3" fill="#01579b"/></svg>',
+  botella: '<svg viewBox="0 0 32 32"><path d="M13 3h6v4l2 3v17a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2V10l2-3z" fill="#4fc3f7" stroke="#0277bd" stroke-width="1.5"/><rect x="12" y="2" width="8" height="3" rx="1" fill="#0277bd"/><rect x="11" y="14" width="10" height="6" fill="#fff" opacity=".7"/></svg>',
+  banano: '<svg viewBox="0 0 32 32"><path d="M6 8c2 12 10 18 22 16-2 3-6 4-10 3C10 25 4 17 6 8z" fill="#fdd835" stroke="#f9a825" stroke-width="1.5"/><path d="M6 8l-1-3" stroke="#6d4c41" stroke-width="2" stroke-linecap="round"/></svg>',
+  servilleta: '<svg viewBox="0 0 32 32"><path d="M6 8l18-2 2 18-18 2z" fill="#eceff1" stroke="#90a4ae" stroke-width="1.5"/><path d="M10 13c3 2 6-2 9 0M11 18c3 2 6-2 9 0" stroke="#bcaaa4" stroke-width="2" fill="none"/></svg>',
+  papel: '<svg viewBox="0 0 32 32"><rect x="7" y="4" width="18" height="24" rx="1" fill="#fff" stroke="#90a4ae" stroke-width="1.5"/><path d="M10 10h12M10 14h12M10 18h12M10 22h8" stroke="#64b5f6" stroke-width="1.5"/><path d="M12 4v24" stroke="#ef9a9a" stroke-width="1.2"/></svg>',
+  comida: '<svg viewBox="0 0 32 32"><ellipse cx="16" cy="20" rx="12" ry="6" fill="#fff" stroke="#90a4ae" stroke-width="1.5"/><circle cx="12" cy="18" r="3" fill="#8d6e63"/><circle cx="18" cy="17" r="2.5" fill="#66bb6a"/><path d="M15 21c2 1 5 1 7-1" stroke="#ffb300" stroke-width="2" fill="none"/></svg>',
+  lata: '<svg viewBox="0 0 32 32"><rect x="9" y="5" width="14" height="23" rx="3" fill="#e53935" stroke="#b71c1c" stroke-width="1.5"/><rect x="9" y="12" width="14" height="7" fill="#fff" opacity=".8"/><ellipse cx="16" cy="5.5" rx="7" ry="1.6" fill="#bdbdbd"/></svg>',
+  huevo: '<svg viewBox="0 0 32 32"><path d="M5 20c0-6 4-10 7-10 2 0 3 2 4 3l2-3 2 3 2-2c2 1 5 4 5 9 0 4-5 7-11 7S5 24 5 20z" fill="#fff3e0" stroke="#bcaaa4" stroke-width="1.5"/></svg>',
+  trofeo: '<svg viewBox="0 0 64 64"><path d="M20 8h24v14a12 12 0 0 1-24 0z" fill="#f9a825"/><path d="M20 12H10c0 8 4 12 10 12M44 12h10c0 8-4 12-10 12" stroke="#f9a825" stroke-width="4" fill="none"/><rect x="28" y="34" width="8" height="10" fill="#f57f17"/><rect x="20" y="44" width="24" height="8" rx="2" fill="#01579b"/><path d="M32 13c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#fff"/></svg>',
+  caneca: '<svg viewBox="0 0 40 46"><rect x="4" y="6" width="32" height="5" rx="2" fill="currentColor" opacity=".9"/><path d="M7 12h26l-3 30H10z" fill="currentColor" opacity=".75"/><path d="M15 17v20M20 17v20M25 17v20" stroke="rgba(0,0,0,.25)" stroke-width="2"/><rect x="16" y="2" width="8" height="4" rx="1.5" fill="currentColor"/></svg>',
+};
+
+/* ============================ ESCENAS =================================== */
+function escenaCasa() {
+  return `
+  <rect width="600" height="380" fill="#e3f2fd"/>
+  <!-- baño -->
+  <rect x="20" y="40" width="360" height="300" fill="#fff8e1" stroke="#b0bec5" stroke-width="3"/>
+  <rect x="20" y="300" width="360" height="40" fill="#cfd8dc"/>
+  <text x="35" y="65" font-size="15" fill="#78909c" font-family="Segoe UI, Arial">Baño</text>
+  <!-- lavamanos -->
+  <rect x="70" y="190" width="100" height="18" rx="6" fill="#eceff1" stroke="#90a4ae" stroke-width="2"/>
+  <rect x="108" y="208" width="24" height="80" fill="#eceff1" stroke="#90a4ae" stroke-width="2"/>
+  <rect x="104" y="160" width="10" height="26" fill="#90a4ae"/><rect x="104" y="160" width="34" height="8" rx="3" fill="#90a4ae"/>
+  <path d="M135 172c3 5 4 7 4 9a4 4 0 0 1-8 0c0-2 1-4 4-9z" fill="#29b6f6"/>
+  <rect x="80" y="90" width="80" height="60" rx="6" fill="#b3e5fc" stroke="#90a4ae" stroke-width="2"/>
+  <!-- ducha -->
+  <rect x="215" y="60" width="110" height="240" fill="#e1f5fe" stroke="#90a4ae" stroke-width="2"/>
+  <path d="M250 70h40v12h-40z" fill="#90a4ae"/>
+  <g stroke="#29b6f6" stroke-width="3" stroke-linecap="round"><path d="M255 90l-6 40M265 90l-3 50M275 90v55M285 90l3 50M295 90l6 40"/></g>
+  <!-- inodoro -->
+  <rect x="270" y="215" width="54" height="30" rx="4" fill="#eceff1" stroke="#90a4ae" stroke-width="2"/>
+  <path d="M262 248h70c0 22-14 36-35 36s-35-14-35-36z" fill="#eceff1" stroke="#90a4ae" stroke-width="2"/>
+  <path d="M285 258c6 6 18 6 24 0" stroke="#29b6f6" stroke-width="3" fill="none"/>
+  <!-- cocina / patio -->
+  <rect x="380" y="40" width="200" height="200" fill="#fffde7" stroke="#b0bec5" stroke-width="3"/>
+  <text x="395" y="65" font-size="15" fill="#78909c" font-family="Segoe UI, Arial">Habitación</text>
+  <circle cx="470" cy="130" r="22" fill="#ffcc80"/><rect x="452" y="152" width="36" height="50" rx="10" fill="#4fc3f7"/>
+  <rect x="487" y="122" width="22" height="5" rx="2" fill="#e53935" transform="rotate(-20 487 122)"/>
+  <rect x="420" y="190" width="100" height="14" rx="5" fill="#eceff1" stroke="#90a4ae" stroke-width="2"/>
+  <rect x="500" y="170" width="8" height="20" fill="#90a4ae"/>
+  <g stroke="#29b6f6" stroke-width="3" stroke-linecap="round"><path d="M504 192v10M500 195v8M508 195v8"/></g>
+  <rect x="380" y="240" width="200" height="100" fill="#c8e6c9"/>
+  <text x="395" y="262" font-size="15" fill="#558b2f" font-family="Segoe UI, Arial">Patio</text>
+  <rect x="470" y="275" width="90" height="42" rx="12" fill="#e53935"/><rect x="485" y="262" width="55" height="20" rx="8" fill="#ef9a9a"/>
+  <circle cx="487" cy="318" r="9" fill="#37474f"/><circle cx="545" cy="318" r="9" fill="#37474f"/>
+  <path d="M400 330c20-10 40 0 60-25" stroke="#43a047" stroke-width="5" fill="none"/>
+  <g stroke="#29b6f6" stroke-width="3" stroke-linecap="round"><path d="M462 302l14-4M462 308l16 0M462 296l12-8"/></g>
+  <rect x="20" y="340" width="560" height="10" fill="#8d6e63"/>`;
+}
+function escenaFactura() {
+  return `
+  <rect width="600" height="400" fill="#fffde7"/>
+  <rect x="60" y="20" width="480" height="360" rx="14" fill="#fff" stroke="#b0bec5" stroke-width="3"/>
+  <rect x="60" y="20" width="480" height="40" rx="14" fill="#01579b"/>
+  <rect x="60" y="45" width="480" height="15" fill="#01579b"/>
+  <text x="80" y="47" font-size="17" font-weight="700" fill="#fff" font-family="Segoe UI, Arial">Acueducto · Factura de servicio</text>
+  <text x="240" y="88" font-size="14" fill="#01313f" font-family="Segoe UI, Arial">Suscriptor: Familia Pérez</text>
+  <text x="240" y="108" font-size="13" fill="#5c7a82" font-family="Segoe UI, Arial">Vereda El Llano · Casa 12</text>
+  <rect x="95" y="150" width="160" height="110" rx="10" fill="#e1f5fe"/>
+  <text x="115" y="178" font-size="13" fill="#5c7a82" font-family="Segoe UI, Arial">Consumo del mes</text>
+  <text x="115" y="222" font-size="34" font-weight="700" fill="#0288d1" font-family="Segoe UI, Arial">18 m³</text>
+  <rect x="345" y="150" width="170" height="110" rx="10" fill="#f1f8e9"/>
+  <text x="362" y="178" font-size="13" fill="#5c7a82" font-family="Segoe UI, Arial">Lecturas del medidor</text>
+  <text x="362" y="206" font-size="14" fill="#01313f" font-family="Segoe UI, Arial">Anterior: 1.250</text>
+  <text x="362" y="230" font-size="14" fill="#01313f" font-family="Segoe UI, Arial">Actual:    1.268</text>
+  <rect x="95" y="275" width="160" height="85" rx="10" fill="#fff3e0"/>
+  <text x="115" y="302" font-size="13" fill="#5c7a82" font-family="Segoe UI, Arial">Total a pagar</text>
+  <text x="115" y="338" font-size="24" font-weight="700" fill="#e65100" font-family="Segoe UI, Arial">$ ●●●●</text>
+  <rect x="345" y="275" width="170" height="85" rx="10" fill="#ffebee"/>
+  <text x="362" y="302" font-size="13" fill="#5c7a82" font-family="Segoe UI, Arial">Pague hasta</text>
+  <text x="362" y="336" font-size="17" font-weight="700" fill="#c62828" font-family="Segoe UI, Arial">15 de diciembre</text>`;
+}
+const ESCENAS = { casa: { vb: "0 0 600 380", dibujo: escenaCasa }, factura: { vb: "0 0 600 400", dibujo: escenaFactura } };
+Object.assign(ICONOS, {
+  rio2: '<svg viewBox="0 0 32 32"><path d="M3 10c4-3 8 3 12 0s9 3 14 0M3 17c4-3 8 3 12 0s9 3 14 0M3 24c4-3 8 3 12 0s9 3 14 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
+  grifoB: '<svg viewBox="0 0 32 32"><path d="M5 10h14v4H5zM17 8h6v10h-6zM11 6h4v4h-4z" fill="#fff"/><path d="M20 21c1.6 2.2 2.4 3.6 2.4 4.6a2.4 2.4 0 0 1-4.8 0c0-1 .8-2.4 2.4-4.6z" fill="#fff"/></svg>',
+  rayo: '<svg viewBox="0 0 32 32"><path d="M18 3L7 18h7l-2 11 11-16h-7z" fill="#fff"/></svg>',
+  huella: '<svg viewBox="0 0 32 32"><ellipse cx="15" cy="20" rx="6" ry="8" fill="#fff"/><circle cx="9" cy="8" r="2.4" fill="#fff"/><circle cx="14" cy="6" r="2.6" fill="#fff"/><circle cx="19.5" cy="7" r="2.4" fill="#fff"/><circle cx="23.5" cy="10.5" r="2" fill="#fff"/></svg>',
+  arbol: '<svg viewBox="0 0 32 32"><circle cx="16" cy="12" r="9" fill="#fff"/><rect x="14" y="18" width="4" height="11" fill="#fff"/></svg>',
+  hoja: '<svg viewBox="0 0 32 32"><path d="M6 26C6 12 14 5 27 5c0 13-7 21-21 21z" fill="#fff"/><path d="M6 26L20 12" stroke="#689f38" stroke-width="2"/></svg>',
+  manzana: '<svg viewBox="0 0 32 32"><path d="M16 10c-3-2-10-2-10 7 0 6 4 11 7 11 1.5 0 2-1 3-1s1.5 1 3 1c3 0 7-5 7-11 0-9-7-9-10-7z" fill="#fff"/><path d="M16 10c0-3 1-5 4-6" stroke="#fff" stroke-width="2" fill="none"/></svg>',
+  libreta: '<svg viewBox="0 0 64 64"><rect x="12" y="6" width="40" height="52" rx="5" fill="#0288d1"/><rect x="18" y="12" width="28" height="40" rx="2" fill="#fff"/><path d="M23 22h18M23 30h18M23 38h12" stroke="#81d4fa" stroke-width="3" stroke-linecap="round"/><path d="M38 44l4 4 8-10" stroke="#2e7d32" stroke-width="4" fill="none" stroke-linecap="round"/></svg>',
+});
+
+/* ===================== ESCENA DE LA RUTA (trivia) ======================= */
+function escenaRuta(tema, n, color) {
+  const W = 640, H = 190;
+  const st = [];
+  for (let i = 0; i <= n; i++) st.push({ x: 48 + i * ((W - 96) / n), y: i % 2 ? 118 : 140 });
+  let fondo = '';
+  if (tema === "agua") {
+    fondo = `<rect width="${W}" height="${H}" fill="#e1f5fe"/>
+      <path d="M0 95 Q 80 60 160 90 T 320 85 T 480 80 T 640 90 V190 H0z" fill="#a5d6a7"/>
+      <path d="M0 165 C 120 140 200 190 320 165 S 520 140 640 165 V190 H0z" fill="#4fc3f7"/>
+      <path d="M40 172c20-6 40 6 60 0M260 176c20-6 40 6 60 0M470 170c20-6 40 6 60 0" stroke="#e1f5fe" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  } else if (tema === "bosque") {
+    fondo = `<rect width="${W}" height="${H}" fill="#f1f8e9"/>
+      <path d="M0 100 Q 100 55 200 95 T 420 85 T 640 95 V190 H0z" fill="#aed581"/>` +
+      [30, 110, 230, 350, 470, 590].map((x, k) => `<g transform="translate(${x} ${k % 2 ? 70 : 62})"><rect x="-4" y="22" width="8" height="22" fill="#6d4c41"/><circle r="22" cy="10" fill="${k % 2 ? '#43a047' : '#2e7d32'}"/></g>`).join('');
+  } else if (tema === "campo") {
+    fondo = `<rect width="${W}" height="${H}" fill="#fff8e1"/>
+      <path d="M0 95 Q 160 70 320 95 T 640 92 V190 H0z" fill="#c5e1a5"/>` +
+      [0, 1, 2, 3, 4].map(k => `<path d="M0 ${105 + k * 18} Q 320 ${95 + k * 18} 640 ${105 + k * 18}" stroke="#9ccc65" stroke-width="5" fill="none"/>`).join('') +
+      `<circle cx="580" cy="40" r="22" fill="#ffca28"/>`;
+  } else {
+    fondo = `<rect width="${W}" height="${H}" fill="#e3f2fd"/><circle cx="590" cy="38" r="20" fill="#ffca28"/>` +
+      [[20, 50, 60], [90, 30, 80], [190, 45, 65], [300, 25, 85], [420, 40, 70], [520, 30, 80]].map(([x, w, h], k) =>
+        `<rect x="${x}" y="${110 - h}" width="${w + 20}" height="${h}" fill="${k % 2 ? '#b0bec5' : '#90a4ae'}"/>` +
+        `<rect x="${x + 8}" y="${118 - h}" width="8" height="8" fill="#fff59d"/><rect x="${x + 24}" y="${118 - h}" width="8" height="8" fill="#fff59d"/>`).join('') +
+      `<rect y="105" width="${W}" height="85" fill="#c8e6c9"/>`;
+  }
+  const camino = `<path d="M${st.map(s => `${s.x} ${s.y}`).join(' L ')}" stroke="#fff" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+    <path d="M${st.map(s => `${s.x} ${s.y}`).join(' L ')}" stroke="${color}" stroke-width="3" stroke-dasharray="2 9" fill="none" stroke-linecap="round"/>`;
+  const estaciones = st.map((s, i) => i === n
+    ? `<g transform="translate(${s.x} ${s.y})"><rect x="-2" y="-46" width="4" height="46" fill="#5d4037"/><path d="M2 -46h26l-7 8 7 8H2z" fill="#f9a825"/><circle r="9" fill="#fff" stroke="${color}" stroke-width="3"/></g>`
+    : `<g class="estacion" data-i="${i}"><circle cx="${s.x}" cy="${s.y}" r="12" fill="#fff" stroke="${color}" stroke-width="3"/><text x="${s.x}" y="${s.y + 4.5}" text-anchor="middle" font-size="12" font-weight="700" fill="${color}" font-family="Segoe UI, Arial">${i + 1}</text></g>`).join('');
+  const avatar = `<g id="avatar" style="transform: translate(${st[0].x}px, ${st[0].y}px)">
+      <g transform="translate(0 -30)">
+        <ellipse cx="0" cy="30" rx="12" ry="3" fill="rgba(0,0,0,.18)"/>
+        <path d="M0 -20c9 12 15 19 15 26a15 15 0 0 1-30 0c0-7 6-14 15-26z" fill="${color}" stroke="#fff" stroke-width="2.5"/>
+        <circle cx="-5" cy="6" r="3.6" fill="#fff"/><circle cx="5" cy="6" r="3.6" fill="#fff"/>
+        <circle cx="-4.4" cy="6.6" r="1.8" fill="#01313f"/><circle cx="5.6" cy="6.6" r="1.8" fill="#01313f"/>
+        <path d="M-5 13 Q0 17 5 13" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+      </g></g>`;
+  return { svg: `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ruta del Defensor del Agua">${fondo}${camino}${estaciones}${avatar}</svg>`, st };
+}
+
+/* ============================ ESTADO ==================================== */
+const LS = "defensores-juegos-v3";
+let estado = { puntos: 0, completados: {}, grupo: null };
+try { const g = JSON.parse(localStorage.getItem(LS)); if (g && g.completados && !Array.isArray(g.completados)) estado = g; } catch (e) {}
+function guardar() {
+  try { localStorage.setItem(LS, JSON.stringify(estado)); } catch (e) {}
+  if (typeof window.onEstadoGuardado === "function") window.onEstadoGuardado(estado);
+}
+/* Modo app: si la página carga el módulo de progreso (script con data-progreso),
+   se espera el estado guardado en Firestore y se fusiona con el local. */
+const MODO_APP = !!document.querySelector("script[data-progreso]");
+const esperarRemoto = MODO_APP ? new Promise(r => { window.__remotoListo = r; }) : Promise.resolve(null);
+function fusionar(r) {
+  if (!r) return;
+  if (typeof r.puntos === "number") estado.puntos = r.puntos;
+  if (r.grupo && !estado.grupo) estado.grupo = r.grupo;
+  for (const [id, v] of Object.entries(r.completados || {})) {
+    const l = estado.completados[id];
+    estado.completados[id] = { estrellas: Math.max(v.estrellas || 1, l ? l.estrellas || 1 : 0) };
+  }
+  estado.bitacoras = estado.bitacoras || {};
+  for (const [id, v] of Object.entries(r.bitacoras || {})) {
+    const l = estado.bitacoras[id];
+    const vacio = !l || (Array.isArray(l) ? !l.length : !Object.keys(l).length);
+    if (vacio) estado.bitacoras[id] = v;
+  }
+  try { localStorage.setItem(LS, JSON.stringify(estado)); } catch (e) {}
+  ASIGNADOS = r.asignados || [];
+  RETOS_APP = new Set(r.retosCompletados || []);
+}
+/* Retos que el mapa de la app le asignó al estudiante (10 por eje). */
+let ASIGNADOS = [], RETOS_APP = new Set();
+const normT = t => String(t || "").trim().toLowerCase();
+function misAsignados() {
+  return ASIGNADOS.map(x => {
+    const a = ACTIVIDADES.find(a => !a.juego && a.eje === x.eje && a.orden === x.orden && normT(a.titulo) === normT(x.titulo))
+           || ACTIVIDADES.find(a => !a.juego && a.id === x.id);
+    return a ? { a, docId: x.id } : null;
+  }).filter(Boolean);
+}
+function marcarHechosApp() {
+  misAsignados().forEach(({ a, docId }) => {
+    if (RETOS_APP.has(docId) && !estado.completados[a.id]) estado.completados[a.id] = { estrellas: 1 };
+  });
+}
+window.onAsignadosActualizados = (lista, hechos) => {
+  ASIGNADOS = lista || []; RETOS_APP = new Set(hechos || []); marcarHechosApp();
+};
+function seccionAsignados(soloEje) {
+  const lista = misAsignados().filter(x => !soloEje || x.a.eje === soloEje);
+  if (!lista.length) return null;
+  const eje = EJES[lista[0].a.eje];
+  const hechos = lista.filter(x => estado.completados[x.a.id]).length;
+  const caja = el("section", { class: "asignados" });
+  caja.append(el("h2", { class: "seccion-t" }, `⭐ Mis retos asignados · ${esc(eje ? eje.nombre : "")}`),
+    el("p", { class: "sub" }, `Son los mismos retos de tu mapa. Llevas ${hechos} de ${lista.length}.`));
+  const g = el("div", { class: "niveles" });
+  lista.forEach((x, i) => g.append(tarjeta(x.a, i + 1, EJES[x.a.eje])));
+  caja.append(g);
+  return caja;
+}
+const $app = document.getElementById("app");
+const $pts = document.getElementById("total-puntos");
+const $btnGrupo = document.getElementById("btn-grupo");
+let ACTIVIDADES = [];
+
+function el(tag, attrs = {}, html = "") {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  if (html) n.innerHTML = html;
+  return n;
+}
+function esc(t) { return String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function mezclar(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+function pintarPuntos() { $pts.textContent = estado.puntos; }
+const NOMBRE_TIPO = { bitacora: "Bitácora", simulador: "Simulador", historia: "Historia", arrastrar: "Arrastrar", trivia: "Ruta del Defensor", ordenar: "Ordenar", reto: "Reto práctico", escena: "Explorar escena", clasificar: "Clasificar", parejas: "Parejas" };
+
+$btnGrupo.addEventListener("click", () => { estado.grupo = null; guardar(); inicio(); });
+function aplicarGrupo() {
+  document.body.className = estado.grupo ? "g-" + estado.grupo : "";
+  if (estado.grupo) { $btnGrupo.hidden = false; $btnGrupo.textContent = ({ primaria: "Primaria", basica: "Básica", media: "Media" })[estado.grupo] + " ⇄"; $btnGrupo.title = "Cambiar de grupo"; } else $btnGrupo.hidden = true;
+}
+function delGrupo(eje) { return ACTIVIDADES.filter(a => a.eje === eje && (a.grupos ? a.grupos.includes(estado.grupo) : a.grupo === estado.grupo)); }
+
+function inicio() {
+  aplicarGrupo(); pintarPuntos();
+  if (!estado.grupo) return elegirGrupo();
+  mapa();
+}
+function elegirGrupo() {
+  window.scrollTo(0, 0);
+  $app.innerHTML = "";
+  $app.append(el("h1", {}, "¿En qué grupo estás?"), el("p", { class: "intro" }, "Los retos se adaptan a tu grado. Puedes cambiar de grupo cuando quieras."));
+  const g = el("div", { class: "grupos" });
+  Object.entries(GRUPOS).forEach(([k, gr], i) => {
+    g.append(el("button", { class: "grupo-card", type: "button", onclick: () => { estado.grupo = k; guardar(); inicio(); } },
+      `<span class="circ" style="background:${gr.color}">${i + 1}</span><b>${gr.nombre}</b><span class="grados">Grados ${gr.grados}</span><span>${gr.texto}</span>`));
+  });
+  $app.append(g);
+}
+
+/* ============================ MAPA ====================================== */
+function mapa() {
+  window.scrollTo(0, 0);
+  $app.innerHTML = "";
+  const gr = GRUPOS[estado.grupo];
+  $app.append(el("h1", {}, "Explora los retos del club"), el("p", { class: "intro" }, `Retos para ${gr.nombre} (grados ${gr.grados}). Elige un eje para ver su ruta de retos.`));
+  const sa = seccionAsignados();
+  if (sa) $app.append(sa);
+  const grid = el("div", { class: "ejes" });
+  for (const [clave, eje] of Object.entries(EJES)) {
+    const acts = delGrupo(clave);
+    const hechos = acts.filter(a => estado.completados[a.id]).length;
+    const pct = acts.length ? Math.round(hechos / acts.length * 100) : 0;
+    grid.append(el("button", { class: "eje", type: "button", onclick: () => verEje(clave) },
+      `<div class="eje-cab"><div class="eje-icono" style="background:${eje.color}">${ICONOS[eje.icono]}</div><div><h2>${eje.nombre}</h2><span class="conteo">${hechos} de ${acts.length} retos</span></div></div><div class="mini-barra"><i style="width:${pct}%"></i></div>`));
+  }
+  $app.append(grid, el("p", { class: "aviso" }, `${ACTIVIDADES.filter(a => !a.juego).length} actividades cargadas. La división por grupos es una propuesta automática según la dificultad del texto; los profesores pueden ajustarla. ${MODO_APP ? "Tu progreso se guarda en tu cuenta del club." : "Los puntos se guardan solo en este navegador."}`));
+}
+
+function verEje(clave) {
+  window.scrollTo(0, 0);
+  $app.innerHTML = "";
+  const eje = EJES[clave];
+  const acts = delGrupo(clave);
+  const especiales = acts.filter(a => a.juego);
+  const normales = acts.filter(a => !a.juego).sort((a, b) => a.orden - b.orden);
+  $app.append(el("button", { class: "volver", onclick: mapa }, "← Todos los ejes"));
+  $app.append(el("div", { class: "cab-eje" }, `<div class="eje-icono" style="background:${eje.color}">${ICONOS[eje.icono]}</div><div><span class="etiqueta">${GRUPOS[estado.grupo].nombre}</span><h1>${eje.nombre}</h1></div>`));
+  const buscar = el("input", { class: "buscar", type: "search", placeholder: "Buscar un reto por nombre…", "aria-label": "Buscar reto" });
+  $app.append(buscar);
+  const sa = seccionAsignados(clave);
+  if (sa) $app.append(sa);
+  if (especiales.length) {
+    $app.append(el("h2", { class: "seccion-t" }, "⭐ Juegos especiales"));
+    const g = el("div", { class: "niveles" }); especiales.forEach((a, i) => g.append(tarjeta(a, "★", eje))); $app.append(g);
+  }
+  $app.append(el("h2", { class: "seccion-t" }, `Ruta de retos (${normales.length})`));
+  const g2 = el("div", { class: "niveles" });
+  normales.forEach((a, i) => g2.append(tarjeta(a, i + 1, eje)));
+  $app.append(g2);
+  buscar.addEventListener("input", () => {
+    const t = buscar.value.trim().toLowerCase();
+    $app.querySelectorAll(".nivel").forEach(n => { n.hidden = t && !n.dataset.t.includes(t); });
+  });
+}
+function esHistoria(a) { return a.tipo === "trivia" && /juego de roles|historieta/i.test(a.titulo); }
+function tarjeta(a, num, eje) {
+  const r = estado.completados[a.id];
+  const aut = typeof AUTORADOS !== 'undefined' && AUTORADOS[a.id];
+  const tipo = a.juego ? a.juego.tipo : aut ? aut.tipo : (typeof bitacoraPara === "function" && bitacoraPara(a)) ? "bitacora" : (typeof simuladorPara === "function" && simuladorPara(a)) ? "simulador" : esHistoria(a) ? "historia" : a.tipo;
+  const b = el("button", { class: "nivel" + (r ? " hecho" : ""), type: "button", onclick: () => jugar(a) },
+    `<span class="bola" style="background:${eje.color}">${r ? "✓" : num}</span><span class="tipo">${NOMBRE_TIPO[tipo] || tipo}</span><span class="t">${esc(a.titulo)}</span><span class="est">${r ? "★".repeat(r.estrellas || 1) : ""}</span>`);
+  b.dataset.t = a.titulo.toLowerCase();
+  return b;
+}
+
+/* ============================ JUEGO ===================================== */
+function jugar(act) {
+  window.scrollTo(0, 0);
+  $app.innerHTML = "";
+  const eje = EJES[act.eje];
+  const caja = el("div", { class: "juego" });
+  caja.append(el("button", { class: "volver", onclick: () => verEje(act.eje) }, `← Volver a ${eje.nombre}`));
+  caja.append(el("span", { class: "etiqueta" }, eje.nombre), el("h1", {}, esc(act.titulo)));
+  const instr = el("p", { class: "instruccion" });
+  caja.append(instr);
+  const zona = el("div");
+  const fb = el("p", { class: "feedback", "aria-live": "polite" });
+  const dato = el("div", { class: "dato" });
+  const fin = el("div", { class: "final" });
+  caja.append(zona, fb, dato, fin);
+  $app.append(caja);
+  let errores = 0;
+
+  const ctx = {
+    eje, act,
+    fb(texto, ok) { fb.textContent = texto; fb.className = "feedback " + (ok === true ? "ok" : ok === false ? "mal" : ""); if (ok === false) errores++; },
+    instr(t) { instr.textContent = t || ""; },
+    completar() {
+      const dt = ctx.datoExtra || (act.juego || {}).dato;
+      if (dt) { dato.innerHTML = "💡 " + esc(dt); dato.classList.add("ver"); }
+      const estrellas = errores === 0 ? 3 : errores <= 2 ? 2 : 1;
+      const previo = estado.completados[act.id];
+      const pts = act.pts ?? act.puntosOtorga ?? 10;
+      if (!previo) estado.puntos += pts;
+      estado.completados[act.id] = { estrellas: Math.max(estrellas, previo ? previo.estrellas : 0) };
+      guardar(); pintarPuntos();
+      fin.innerHTML = `${ICONOS.trofeo}<div class="estrellas" aria-label="${estrellas} de 3 estrellas">${"★".repeat(estrellas)}<span style="color:#cfd8dc">${"★".repeat(3 - estrellas)}</span></div><h2>¡Reto completado!</h2><p>${previo ? "Ya habías ganado los puntos de este reto." : `Ganaste <b>${pts} puntos</b>.`}</p>`;
+      const acc = el("div", { class: "acciones" });
+      acc.append(el("button", { class: "btn btn-claro", onclick: () => jugar(act) }, "Jugar otra vez"), el("button", { class: "btn btn-verde", onclick: () => verEje(act.eje) }, "Volver a la ruta"));
+      fin.append(acc); fin.classList.add("ver");
+      try { window.parent.postMessage({ tipo: "reto-completado", id: act.id, puntos: pts, estrellas }, "*"); } catch (e) {}
+      if (typeof window.onRetoCompletado === "function") window.onRetoCompletado(act, estrellas, errores);
+      setTimeout(() => fin.scrollIntoView({ behavior: "smooth", block: "nearest" }), 150);
+    },
+  };
+
+  const aut = typeof AUTORADOS !== "undefined" && AUTORADOS[act.id];
+  const pregs = (act.preguntas || []).filter(q => q.p && q.p.length >= 12);
+  if (aut) {
+    ctx.instr(aut.instruccion); ctx.datoExtra = aut.dato;
+    const c2 = pregs.length ? { ...ctx, completar: () => {
+      setTimeout(() => { zona.innerHTML = ""; ctx.fb(""); ctx.instr("¡Muy bien! Ahora responde las preguntas para llegar a la meta."); MOTORES.trivia(zona, { ...act, preguntas: pregs }, ctx); }, 1200);
+    } } : ctx;
+    MOTORES[aut.tipo](zona, aut, c2);
+  } else if (act.juego) { // juegos especiales v1
+    ctx.instr(act.juego.instruccion);
+    MOTORES[act.juego.tipo](zona, act.juego, ctx);
+  } else if (typeof bitacoraPara === "function" && bitacoraPara(act)) {
+    const bc = bitacoraPara(act);
+    ctx.instr((act.desc || "Lleva un registro durante varios días.").split(". ")[0].replace(/\.$/, "") + (bc.modo === "lista" ? ". Agrega tus anotaciones: el resumen se actualiza solo." : ". Anota un dato cada día: la gráfica se actualiza sola."));
+    const c4 = pregs.length ? { ...ctx, completar: () => {
+      zona.innerHTML = ""; ctx.fb(""); ctx.instr("¡Bitácora lista! Ahora responde las preguntas para llegar a la meta.");
+      MOTORES.trivia(zona, { ...act, preguntas: pregs }, ctx); window.scrollTo({ top: 0, behavior: "smooth" });
+    } } : ctx;
+    motorBitacora(zona, act, bitacoraPara(act), c4);
+  } else if (typeof simuladorPara === "function" && simuladorPara(act)) {
+    const sim = simuladorPara(act);
+    ctx.instr(act.desc ? act.desc.split(". ")[0].replace(/\.$/, "") + ". Mueve los controles y observa qué pasa." : "Mueve los controles y observa qué pasa.");
+    const c3 = pregs.length ? { ...ctx, completar: () => {
+      zona.innerHTML = ""; ctx.fb(""); ctx.instr("¡Experimento listo! Ahora responde las preguntas para llegar a la meta.");
+      MOTORES.trivia(zona, { ...act, preguntas: pregs }, ctx); window.scrollTo({ top: 0, behavior: "smooth" });
+    } } : ctx;
+    SIMULADORES[sim.tipo](zona, sim.p, c3);
+  } else if (act.tipo === "ordenar") {
+    ctx.instr("Toca los pasos en el orden correcto. Si te equivocas, toca un paso colocado para devolverlo.");
+    const siguiente = act.preguntas && act.preguntas.length ? () => {
+      setTimeout(() => { zona.innerHTML = ""; ctx.fb(""); ctx.instr("¡Muy bien! Ahora responde las preguntas para llegar a la meta."); MOTORES.trivia(zona, act, ctx); }, 1200);
+    } : null;
+    MOTORES.ordenar(zona, { pasos: act.pasos.map(t => ({ texto: t })) }, siguiente ? { ...ctx, completar: siguiente } : ctx);
+  } else if (esHistoria(act)) {
+    ctx.instr("Lee lo que pasa en cada viñeta y elige la mejor respuesta para continuar la historia.");
+    MOTORES.historia(zona, { ...act, preguntas: pregs.length ? pregs : act.preguntas }, ctx);
+  } else if (act.tipo === "trivia") {
+    ctx.instr("Responde bien cada pregunta para que tu gota avance por la ruta hasta la meta.");
+    MOTORES.trivia(zona, { ...act, preguntas: pregs.length ? pregs : act.preguntas }, ctx);
+  } else {
+    MOTORES.reto(zona, act, ctx);
+  }
+}
+
+/* ============================ MOTORES =================================== */
+const MOTORES = {
+  trivia(zona, act, ctx) {
+    const qs = act.preguntas;
+    const { svg, st } = escenaRuta(ctx.eje.tema, qs.length, ctx.eje.color);
+    const ruta = el("div", { class: "ruta-wrap" }, svg);
+    const avatar = ruta.querySelector("#avatar");
+    const cont = el("div");
+    zona.append(ruta, cont);
+    let n = 0;
+    function mover(i) { avatar.style.transform = `translate(${st[i].x}px, ${st[i].y}px)`; }
+    function mostrar() {
+      const q = qs[n];
+      cont.innerHTML = "";
+      cont.append(el("p", { class: "instruccion" }, `Pregunta ${n + 1} de ${qs.length}`));
+      if (q.ctx) cont.append(el("p", { class: "contexto" }, esc(q.ctx)));
+      cont.append(el("p", { class: "pregunta" }, esc(q.p)));
+      const ops = el("div", { class: "opciones" });
+      mezclar(q.o.map((t, i) => ({ t, i }))).forEach((o, k) => {
+        const b = el("button", { class: "opcion", type: "button" }, `<span class="letra">${"ABCDEF"[k]}</span><span>${esc(o.t)}</span>`);
+        b.addEventListener("click", () => {
+          if (o.i === q.c) {
+            b.classList.add("ok"); ops.querySelectorAll("button").forEach(x => x.disabled = true);
+            ctx.fb("¡Correcto! " + (q.r || ""), true);
+            n++; mover(n);
+            setTimeout(() => { if (n < qs.length) { ctx.fb(""); mostrar(); } else { cont.innerHTML = ""; ctx.completar(); } }, q.r ? 2200 : 1300);
+          } else { b.classList.remove("mal"); void b.offsetWidth; b.classList.add("mal"); b.disabled = true; ctx.fb("Esa no es. ¡Inténtalo otra vez!", false); }
+        });
+        ops.append(b);
+      });
+      cont.append(ops);
+    }
+    mostrar();
+  },
+
+
+  arrastrar(zona, j, ctx) {
+    const area = el("div");
+    const zonasEls = {};
+    if (j.diagrama) {
+      const d = DIAGRAMAS[j.diagrama]; const [, , W, H] = d.vb.split(" ").map(Number);
+      const wrap = el("div", { class: "dd-diagrama" }, `<svg viewBox="${d.vb}" aria-hidden="true">${d.dibujo}</svg>`);
+      j.zonas.forEach(z => {
+        const b = el("button", { class: "dd-zona-d", type: "button", "data-zona": z.id, "aria-label": "Zona " + (z.nombre || z.id),
+          style: `left:${z.x / W * 100}%;top:${z.y / H * 100}%;width:${z.w / W * 100}%;height:${z.h / H * 100}%` }, (z.nombre ? `<span class="dd-titulo">${esc(z.nombre)}</span>` : "") + '<span class="dd-dentro"></span>');
+        wrap.append(b); zonasEls[z.id] = b;
+      });
+      area.append(wrap);
+    } else {
+      const grid = el("div", { class: "dd-zonas" });
+      j.zonas.forEach(z => {
+        const b = el("button", { class: "dd-zona", type: "button", "data-zona": z.id, style: `--c:${z.color || "#0288d1"}` },
+          `<span class="dd-cab"><span class="dd-emo">${z.emoji || ""}</span>${esc(z.nombre)}</span><span class="dd-dentro"></span>`);
+        grid.append(b); zonasEls[z.id] = b;
+      });
+      area.append(grid);
+    }
+    const bandeja = el("div", { class: "dd-bandeja" });
+    const items = mezclar(j.items);
+    let sel = null, colocados = 0;
+    function limpiarSel() { sel = null; bandeja.querySelectorAll(".sel").forEach(x => x.classList.remove("sel")); }
+    function intentar(c, zid) {
+      const it = c._it, z = zonasEls[zid];
+      if (it.zona === zid) {
+        c.disabled = true; c.classList.remove("sel"); c.classList.add("puesto");
+        if (j.diagrama) {
+          c.remove();
+          z.querySelector(".dd-dentro").append(el("span", { class: "dd-nom" }, `${it.emoji || ""} ${esc(it.texto.split(":")[0])}`));
+          const faltan = items.some(x => x.zona === zid && !x._puesto && x !== it);
+          if (!faltan) { z.classList.add("ok"); z.disabled = true; }
+        } else z.querySelector(".dd-dentro").append(c);
+        it._puesto = true;
+        colocados++; ctx.fb("¡Bien! " + it.texto, true);
+        if (colocados === items.length) setTimeout(ctx.completar, 500);
+      } else {
+        c.classList.remove("mal"); void c.offsetWidth; c.classList.add("mal");
+        z.classList.remove("mal"); void z.offsetWidth; z.classList.add("mal");
+        ctx.fb("Ahí no va. ¡Piensa otra vez!", false);
+      }
+      limpiarSel();
+    }
+    Object.entries(zonasEls).forEach(([id, z]) => z.addEventListener("click", () => {
+      if (sel) intentar(sel, id); else ctx.fb("Primero arrastra o toca una tarjeta.");
+    }));
+    function arrastrable(c) {
+      c.addEventListener("pointerdown", e => {
+        if (c.disabled || e.button > 0) return;
+        if (e.pointerType === "mouse") e.preventDefault();
+        const r = c.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top, sx = e.clientX, sy = e.clientY;
+        let ghost = null, movido = false, sobre = null;
+        const mover = ev => {
+          if (!movido && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) return;
+          ev.preventDefault();
+          if (ev.clientY > innerHeight - 60) scrollBy(0, 14); else if (ev.clientY < 70) scrollBy(0, -14);
+          if (!movido) { movido = true; ghost = c.cloneNode(true); ghost.classList.add("dd-fantasma"); ghost.style.width = r.width + "px"; document.body.append(ghost); c.classList.add("origen"); }
+          ghost.style.left = (ev.clientX - ox) + "px"; ghost.style.top = (ev.clientY - oy) + "px";
+          const t = document.elementFromPoint(ev.clientX, ev.clientY);
+          const z = t && t.closest("[data-zona]");
+          if (sobre && sobre !== z) sobre.classList.remove("hover");
+          if (z && !z.disabled) z.classList.add("hover");
+          sobre = z && !z.disabled ? z : null;
+        };
+        const fin = ev => {
+          document.removeEventListener("pointermove", mover); document.removeEventListener("pointerup", fin); document.removeEventListener("pointercancel", fin);
+          if (!movido) return;
+          ghost.remove(); c.classList.remove("origen"); if (sobre) sobre.classList.remove("hover");
+          c._arrastrado = true; setTimeout(() => { c._arrastrado = false; }, 50);
+          if (sobre && ev.type === "pointerup") intentar(c, sobre.dataset.zona);
+        };
+        document.addEventListener("pointermove", mover, { passive: false });
+        document.addEventListener("pointerup", fin); document.addEventListener("pointercancel", fin);
+      });
+      c.addEventListener("click", () => {
+        if (c._arrastrado || c.disabled) return;
+        const ya = c.classList.contains("sel"); limpiarSel();
+        if (!ya) { sel = c; c.classList.add("sel"); ctx.fb("Ahora toca dónde va."); }
+      });
+    }
+    items.forEach(it => {
+      const c = el("button", { class: "dd-chip", type: "button" }, `<span>${it.emoji || ""}</span><span>${esc(it.texto)}</span>`);
+      c._it = it; bandeja.append(c); arrastrable(c);
+    });
+    zona.append(area, el("p", { class: "instruccion", style: "margin:16px 0 8px" }, "Tarjetas: arrástralas a su lugar, o tócalas y luego toca dónde van."), bandeja);
+  },
+
+
+  historia(zona, act, ctx) {
+    const qs = act.preguntas, color = ctx.eje.color;
+    const rol = (act.titulo.split(":")[1] || act.titulo).trim();
+    const tira = el("div", { class: "tira", "aria-hidden": "true" });
+    qs.forEach((_, i) => tira.append(el("i", {}, String(i + 1))));
+    const cont = el("div");
+    zona.append(tira, cont);
+    const personaje = (boca) => `<svg viewBox="0 0 150 190" aria-hidden="true">
+      <ellipse cx="75" cy="184" rx="42" ry="6" fill="rgba(0,0,0,.12)"/>
+      <rect x="45" y="100" width="60" height="70" rx="22" fill="${color}"/>
+      <rect x="28" y="108" width="18" height="48" rx="9" fill="${color}"/><rect x="104" y="108" width="18" height="48" rx="9" fill="${color}"/>
+      <circle cx="37" cy="158" r="9" fill="#ffcc80"/><circle cx="113" cy="158" r="9" fill="#ffcc80"/>
+      <circle cx="75" cy="62" r="38" fill="#ffcc80"/>
+      <path d="M38 55c0-30 20-40 37-40s38 10 38 40c-10-12-30-18-38-18s-27 6-37 18z" fill="#4e342e"/>
+      <circle cx="62" cy="64" r="5" fill="#01313f"/><circle cx="88" cy="64" r="5" fill="#01313f"/>
+      <circle cx="55" cy="76" r="5" fill="#ffab91" opacity=".7"/><circle cx="95" cy="76" r="5" fill="#ffab91" opacity=".7"/>
+      ${boca === "feliz" ? '<path d="M60 80 Q75 96 90 80" stroke="#01313f" stroke-width="4" fill="#fff" stroke-linecap="round"/>'
+        : boca === "duda" ? '<ellipse cx="75" cy="85" rx="6" ry="7" fill="#01313f"/>'
+        : '<path d="M63 84 Q75 90 87 84" stroke="#01313f" stroke-width="4" fill="none" stroke-linecap="round"/>'}
+      <path d="M58 100l17 14 17-14" fill="#fff"/>
+      <path d="M68 132c3 4 4 6 4 8a4 4 0 0 1-8 0c0-2 1-4 4-8z" fill="#fff"/>
+    </svg>`;
+    let n = 0;
+    function mostrar() {
+      const q = qs[n];
+      tira.querySelectorAll("i").forEach((x, i) => { x.className = i < n ? "hecha" : i === n ? "actual" : ""; });
+      cont.innerHTML = "";
+      const v = el("div", { class: "viñeta" }, `<div class="cara-p">${personaje("normal")}</div><div class="globo"><span class="rol">${esc(rol)} · viñeta ${n + 1} de ${qs.length}</span>${q.ctx ? esc(q.ctx) + "<br>" : ""}${esc(q.p)}</div>`);
+      cont.append(v);
+      const rs = el("div", { class: "respuestas" });
+      mezclar(q.o.map((t, i) => ({ t, i }))).forEach(o => {
+        const b = el("button", { class: "resp", type: "button" }, esc(o.t));
+        b.addEventListener("click", () => {
+          if (o.i === q.c) {
+            b.classList.add("ok"); rs.querySelectorAll("button").forEach(x => x.disabled = true);
+            v.querySelector(".cara-p").innerHTML = personaje("feliz");
+            ctx.fb("¡Buena decisión! " + (q.r || ""), true);
+            n++;
+            setTimeout(() => { if (n < qs.length) { ctx.fb(""); mostrar(); } else { tira.querySelectorAll("i").forEach(x => x.className = "hecha"); cont.innerHTML = ""; ctx.completar(); } }, q.r ? 2200 : 1400);
+          } else {
+            b.classList.remove("mal"); void b.offsetWidth; b.classList.add("mal"); b.disabled = true;
+            v.querySelector(".cara-p").innerHTML = personaje("duda");
+            ctx.fb("Mmm… esa no parece la mejor decisión. Prueba otra.", false);
+          }
+        });
+        rs.append(b);
+      });
+      cont.append(rs);
+    }
+    mostrar();
+  },
+
+  reto(zona, act, ctx) {
+    ctx.instr("Este es un reto para hacer fuera de la pantalla, en tu casa, en el colegio o en tu vereda.");
+    zona.append(el("div", { class: "reto-card" }, `${ICONOS.libreta}<div><p style="margin-top:0"><b>${esc(act.desc)}</b></p>${act.objetivo ? `<p>Objetivo: ${esc(act.objetivo)}</p>` : ""}<p>Cuando termines, toca el botón para registrar tu reto.</p></div>`));
+    const acc = el("div", { class: "acciones" });
+    const b = el("button", { class: "btn btn-verde", type: "button" }, "✓ ¡Lo hice!");
+    b.addEventListener("click", () => { b.disabled = true; ctx.completar(); });
+    acc.append(b); zona.append(acc);
+  },
+
+  ordenar(zona, j, ctx) {
+    const ranuras = el("div", { class: "ranuras" });
+    const fichas = el("div", { class: "fichas" });
+    const slots = j.pasos.map((_, i) => { const s = el("div", { class: "ranura" }, `<span class="num">${i + 1}</span>`); ranuras.append(s); return s; });
+    const colocados = new Array(j.pasos.length).fill(null);
+    function crearFicha(idx) {
+      const p = j.pasos[idx];
+      const f = el("button", { class: "ficha", type: "button" }, `${ICONOS[p.icono] || ""}<span>${esc(p.texto)}</span>`);
+      f.dataset.idx = idx;
+      f.addEventListener("click", () => {
+        const enRanura = colocados.indexOf(idx);
+        if (enRanura >= 0) { colocados[enRanura] = null; slots[enRanura].classList.remove("llena", "mal", "ok"); fichas.append(f); ctx.fb(""); return; }
+        const libre = colocados.indexOf(null);
+        if (libre < 0) return;
+        colocados[libre] = idx; slots[libre].append(f); slots[libre].classList.add("llena");
+        if (colocados.every(c => c !== null)) revisar();
+      });
+      return f;
+    }
+    function revisar() {
+      let todo = true;
+      colocados.forEach((c, i) => { slots[i].classList.remove("ok", "mal"); void slots[i].offsetWidth; const bien = c === i; slots[i].classList.add(bien ? "ok" : "mal"); if (!bien) todo = false; });
+      if (todo) { ctx.fb("¡Correcto! Así es el recorrido 💧", true); fichas.remove(); ranuras.querySelectorAll(".ficha").forEach(b => b.disabled = true); ctx.completar(); }
+      else ctx.fb("Algunos pasos no están en su lugar (en rojo). Tócalos para devolverlos y vuelve a intentar.", false);
+    }
+    mezclar(j.pasos.map((_, i) => i)).forEach(i => fichas.append(crearFicha(i)));
+    zona.append(ranuras, fichas);
+  },
+
+  cuestionario(zona, j, ctx) {
+    let n = 0;
+    const barra = el("div", { class: "barra" }, "<i></i>");
+    const cont = el("div");
+    zona.append(barra, cont);
+    function mostrar() {
+      const q = j.preguntas[n];
+      barra.firstChild.style.width = (n / j.preguntas.length * 100) + "%";
+      cont.innerHTML = "";
+      cont.append(el("p", { class: "instruccion" }, `Pregunta ${n + 1} de ${j.preguntas.length}`), el("p", { class: "pregunta" }, q.pregunta));
+      const ops = el("div", { class: "opciones" });
+      q.opciones.forEach((o, i) => {
+        const b = el("button", { class: "opcion", type: "button" }, `<span class="letra">${"ABCD"[i]}</span><span>${o}</span>`);
+        b.addEventListener("click", () => {
+          if (i === q.correcta) {
+            b.classList.add("ok"); ops.querySelectorAll("button").forEach(x => x.disabled = true);
+            ctx.fb("¡Correcto! " + (q.explicacion || ""), true);
+            setTimeout(() => { n++; if (n < j.preguntas.length) { ctx.fb(""); mostrar(); } else { barra.firstChild.style.width = "100%"; ctx.completar(); } }, 1800);
+          } else { b.classList.remove("mal"); void b.offsetWidth; b.classList.add("mal"); b.disabled = true; ctx.fb("Esa no es. Intenta otra opción.", false); }
+        });
+        ops.append(b);
+      });
+      cont.append(ops);
+    }
+    mostrar();
+  },
+
+  escena(zona, j, ctx) {
+    const esc = ESCENAS[j.escena];
+    const wrap = el("div", { class: "escena-wrap " + (j.modo || "") });
+    const ns = "http://www.w3.org/2000/svg";
+    wrap.innerHTML = `<svg viewBox="${esc.vb}" role="img" aria-label="Escena interactiva">${esc.dibujo()}</svg>`;
+    const svg = wrap.firstChild;
+    const contador = el("div", { class: "contador", "aria-hidden": "true" });
+    const encontrados = new Set();
+    j.puntos.forEach(p => {
+      const g = document.createElementNS(ns, "g");
+      g.setAttribute("class", "punto"); g.setAttribute("tabindex", "0"); g.setAttribute("role", "button");
+      g.setAttribute("aria-label", j.modo === "explorar" ? p.titulo : "Zona de la escena");
+      const rect = p.w !== undefined;
+      const mx = rect ? p.x + p.w - 4 : p.x + p.r * .7, my = rect ? p.y + 4 : p.y - p.r * .7;
+      const halo = rect ? `<rect class="halo" x="${p.x - 4}" y="${p.y - 4}" width="${p.w + 8}" height="${p.h + 8}" rx="12"/>` : `<circle class="halo" cx="${p.x}" cy="${p.y}" r="${p.r}"/>`;
+      g.innerHTML = `${halo}${j.modo === "explorar" ? `<g class="pregunta-m"><circle cx="${mx}" cy="${my}" r="12" fill="#f9a825"/><text x="${mx}" y="${my + 5}" text-anchor="middle" font-size="15" font-weight="700" fill="#fff" font-family="Segoe UI, Arial">?</text></g>` : ""}<g class="marcador"><circle cx="${mx}" cy="${my}" r="13" fill="#2e7d32"/><path d="M${mx - 6} ${my}l4 4 8-8" stroke="#fff" stroke-width="3" fill="none"/></g>`;
+      const activar = () => {
+        ctx.fb(`${p.titulo}: ${p.texto}`, true);
+        if (encontrados.has(p.id)) return;
+        encontrados.add(p.id); g.classList.add("encontrado"); pintarContador();
+        if (encontrados.size === j.puntos.length) setTimeout(ctx.completar, 600);
+      };
+      g.addEventListener("click", activar);
+      g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activar(); } });
+      svg.append(g);
+    });
+    function pintarContador() {
+      contador.innerHTML = j.puntos.map((_, i) => `<svg class="gota" viewBox="0 0 32 32"><path d="M16 3c5 7 9 11.5 9 16a9 9 0 0 1-18 0c0-4.5 4-9 9-16z" fill="${i < encontrados.size ? "#2e7d32" : "#b3d4e0"}"/></svg>`).join("") +
+        `<span style="align-self:center;font-weight:700">${encontrados.size} de ${j.puntos.length}</span>`;
+    }
+    if (j.modo === "buscar") svg.addEventListener("click", e => { if (!e.target.closest(".punto")) ctx.fb("Ahí no hay desperdicio. Sigue buscando.", false); });
+    pintarContador();
+    zona.append(wrap, contador);
+  },
+
+  clasificar(zona, j, ctx) {
+    const items = mezclar(j.items);
+    let i = 0;
+    const barra = el("div", { class: "barra" }, "<i></i>");
+    const cola = el("div", { class: "cola", "aria-live": "polite" });
+    const canecas = el("div", { class: "canecas" });
+    j.grupos.forEach(gr => {
+      const b = el("button", { class: "caneca " + gr.id, type: "button" }, `${ICONOS.caneca}<span>Caneca ${gr.nombre}</span><small>${gr.ayuda}</small>`);
+      b.addEventListener("click", () => {
+        if (i >= items.length) return;
+        const it = items[i];
+        if (it.grupo === gr.id) {
+          b.classList.remove("salto"); void b.offsetWidth; b.classList.add("salto");
+          ctx.fb(`¡Bien! ${it.texto} va en la caneca ${gr.nombre.toLowerCase()}.`, true);
+          i++; barra.firstChild.style.width = (i / items.length * 100) + "%";
+          if (i < items.length) mostrar(); else { cola.innerHTML = ""; ctx.completar(); }
+        } else {
+          const o = cola.firstChild; o.classList.remove("mal"); void o.offsetWidth; o.classList.add("mal");
+          ctx.fb(`No va en la caneca ${gr.nombre.toLowerCase()}. Piensa: ¿es aprovechable, orgánico o no aprovechable?`, false);
+        }
+      });
+      canecas.append(b);
+    });
+    function mostrar() { const it = items[i]; cola.innerHTML = ""; cola.append(el("div", { class: "objeto" }, `${ICONOS[it.icono] || ""}<span>${it.texto}</span>`)); }
+    mostrar();
+    zona.append(barra, cola, canecas);
+  },
+
+  parejas(zona, j, ctx) {
+    const cartas = mezclar(j.pares.flatMap((p, k) => [{ k, t: p[0] }, { k, t: p[1] }]));
+    const tablero = el("div", { class: "tablero" });
+    let abiertas = [], hechos = 0, bloqueo = false;
+    cartas.forEach(c => {
+      const b = el("button", { class: "carta", type: "button", "aria-label": "Carta boca abajo" },
+        `<div class="cara dorso">${ICONOS.gota}</div><div class="cara frente">${c.t}</div>`);
+      b.addEventListener("click", () => {
+        if (bloqueo || b.classList.contains("volteada")) return;
+        b.classList.add("volteada"); b.setAttribute("aria-label", c.t); abiertas.push({ b, c });
+        if (abiertas.length === 2) {
+          const [x, y] = abiertas;
+          if (x.c.k === y.c.k) {
+            x.b.classList.add("par"); y.b.classList.add("par"); abiertas = []; hechos++;
+            ctx.fb("¡Pareja encontrada!", true);
+            if (hechos === j.pares.length) setTimeout(ctx.completar, 500);
+          } else {
+            bloqueo = true; ctx.fb("No son pareja. Recuerda dónde están.", false);
+            setTimeout(() => { [x, y].forEach(o => { o.b.classList.remove("volteada"); o.b.setAttribute("aria-label", "Carta boca abajo"); }); abiertas = []; bloqueo = false; }, 1100);
+          }
+        }
+      });
+      tablero.append(b);
+    });
+    zona.append(tablero);
+  },
+};
+
+/* ============================ ARRANQUE ================================== */
+function cargarEspeciales() {
+  return ACTIVIDADES_V1.filter(a => ["escena", "clasificar", "parejas"].includes(a.juego.tipo)).map(a => ({
+    id: "esp-" + a.id, eje: EQUIV_EJE_V1[a.ejeTematico], orden: 0, titulo: a.titulo, desc: a.descripcion, pts: a.puntosOtorga, grupos: a.grupos, juego: a.juego,
+  }));
+}
+$app.innerHTML = '<p class="intro">Cargando actividades…</p>';
+Promise.all([fetch("actividades.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }), esperarRemoto.catch(e => { console.error(e); return null; })])
+  .then(([data, remoto]) => { fusionar(remoto); ACTIVIDADES = [...cargarEspeciales(), ...data]; marcarHechosApp(); inicio(); })
+  .catch(err => { console.error(err); $app.innerHTML = '<p class="intro">No se pudieron cargar las actividades. Recarga la página.</p>'; });
+</script>
+</body>
+</html>

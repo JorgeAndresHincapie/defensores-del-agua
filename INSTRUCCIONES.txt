@@ -1,0 +1,37 @@
+CÓMO PUBLICAR — Club Defensores del Agua
+========================================
+
+Esta carpeta es la app que está publicada hoy, más:
+  - la carpeta "juegos" (los juegos interactivos)
+  - el botón verde "Ir a los juegos interactivos" en dashboard.html
+No se cambió nada más.
+
+1. Descomprima el ZIP en el Escritorio (clic derecho → Extraer todo).
+   Use la carpeta defensores-del-agua-web que sale de aquí.
+
+2. En VS Code: File → Open Folder → elija esa carpeta.
+
+3. Reglas de Firebase: siga REGLAS-FIRESTORE.txt (solo agregar, no borrar).
+
+4. Probar en su computador (recomendado):
+   clic derecho en index.html → "Open with Live Server", entre con una cuenta de
+   estudiante, pulse "Ir a los juegos interactivos" y termine un reto.
+
+5. Publicar. En VS Code: Terminal → New Terminal, y escriba UNA línea a la vez:
+
+      npm install -g firebase-tools
+      firebase login
+      firebase deploy --only hosting
+
+   - La primera línea solo se hace una vez. Si dice que "npm" no se reconoce,
+     instale Node.js (versión LTS) desde nodejs.org, cierre y abra VS Code, y repita.
+   - "firebase login" abre el navegador: entre con la cuenta de Google dueña del proyecto.
+   - Si Windows dice que "la ejecución de scripts está deshabilitada", escriba antes:
+        Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+     responda S y repita el comando.
+
+6. Cuando diga "Deploy complete!", abra https://defensores-del-agua.web.app
+   y recargue con Ctrl + F5.
+
+Si algo sale mal: en la consola de Firebase → Hosting → historial de versiones,
+la versión anterior tiene un botón ⋮ → "Revertir" que deja todo como estaba.

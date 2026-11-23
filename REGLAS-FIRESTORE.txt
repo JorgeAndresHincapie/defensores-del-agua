@@ -1,0 +1,28 @@
+REGLAS DE FIRESTORE: lo que hay que AGREGAR para los juegos
+===========================================================
+
+Dónde: console.firebase.google.com → su proyecto → Firestore Database → pestaña "Reglas".
+
+NO borre ni reemplace sus reglas. Solo hay que agregar dos cosas dentro del bloque
+que empieza con   match /usuarios/{uid} {   (o  {userId}, el nombre puede variar):
+
+1) Si en ese bloque hay una lista con  hasOnly([ ... ])  que nombra los campos que el
+   estudiante puede cambiar (por ejemplo 'puntos', 'retosCompletados', 'calificaciones'...),
+   agregue 'juegos' a esa lista. Ejemplo:
+
+      .hasOnly(['puntos', 'nivelActual', 'retosCompletados', 'insignias', 'calificaciones',
+                'progresoActual', 'promediosEjes', 'juegoCompletado', 'promedioFinal', 'juegos'])
+
+   Si NO hay ninguna lista hasOnly, no tiene que cambiar nada en este punto.
+
+2) Antes de la llave  }  que cierra el bloque de usuarios, pegue esto:
+
+      match /bitacoras/{actividadId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+   (Si su bloque dice {userId} en vez de {uid}, escriba userId en lugar de uid.)
+
+Pulse "Publicar".
+
+Si tiene dudas, tómele una foto a sus reglas y envíela por el chat antes de publicar.

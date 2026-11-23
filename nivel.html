@@ -54,7 +54,7 @@
     import { auth, db } from "./js/firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { registrarProgreso, NOMBRES_EJES } from "./js/firestore.js";
+    import { registrarProgreso, NOMBRES_EJES, avanzarProgresoSiCorresponde } from "./js/firestore.js";
 
     const params = new URLSearchParams(window.location.search);
     const nivelId = params.get("id");
@@ -134,10 +134,14 @@ function iniciarJuegoAcueducto() {
   
 
     let preguntaActual = 0;
+    let erroresTotal = 0;
+    let notaObtenida = null;
 
     function iniciarCuestionario(nivel) {
       document.getElementById("cuestionario-container").style.display = "block";
       preguntaActual = 0;
+      erroresTotal = 0;
+      notaObtenida = null;
       mostrarPregunta(nivel.preguntas);
     }
 
@@ -171,12 +175,14 @@ function iniciarJuegoAcueducto() {
         if (preguntaActual < preguntas.length) {
           setTimeout(() => mostrarPregunta(preguntas), 900);
         } else {
+          notaObtenida = Math.max(2, +(5 - erroresTotal * 0.3).toFixed(1));
           setTimeout(() => {
             document.getElementById("cuestionario-container").style.display = "none";
             btnCompletar.disabled = false;
           }, 900);
         }
       } else {
+        erroresTotal++;
         feedback.textContent = "Intenta de nuevo";
         feedback.classList.remove("exito");
       }
@@ -205,7 +211,24 @@ function iniciarJuegoAcueducto() {
           return;
         }
 
-        nivelActual = { id: nivelSnap.id, ...nivelSnap.data() };
+        nivelActual = { ...nivelSnap.data(), id: nivelSnap.id };
+
+        // Algunos lotes de retos se generaron con nombres de campo distintos
+        // (ej. "texto" en vez de "pregunta", o "respuesta_correcta" con el
+        // texto de la respuesta en vez de "respuestaCorrecta" con su índice).
+        // Normalizamos aquí para que cualquiera de los dos formatos funcione.
+        if (Array.isArray(nivelActual.preguntas)) {
+          nivelActual.preguntas = nivelActual.preguntas.map((p) => {
+            const textoPregunta = p.pregunta || p.texto || "";
+            const opciones = p.opciones || [];
+            let correcta = p.respuestaCorrecta !== undefined ? p.respuestaCorrecta : p.respuesta_correcta;
+            if (typeof correcta === "string") {
+              const idx = opciones.indexOf(correcta);
+              correcta = idx !== -1 ? idx : 0;
+            }
+            return { pregunta: textoPregunta, opciones, respuestaCorrecta: correcta };
+          });
+        }
         perfilActual = perfilSnap.data();
 
         document.getElementById("nivel-eje").textContent =
@@ -239,7 +262,7 @@ function iniciarJuegoAcueducto() {
         contenido.style.display = "block";
         if (nivelActual.id === "acueducto-01" && !retosCompletados.includes(nivelActual.id)) {
           iniciarJuegoAcueducto();
-          } else if (nivelActual.tipoActividad === "cuestionario" && !retosCompletados.includes(nivelActual.id)) {
+          } else if ((nivelActual.tipoActividad === "cuestionario" || nivelActual.tipoActividad === "quiz") && !retosCompletados.includes(nivelActual.id)) {
           iniciarCuestionario(nivelActual);
         } else if (!retosCompletados.includes(nivelActual.id)) {
           btnCompletar.disabled = false;
@@ -273,12 +296,42 @@ await registrarProgreso(
           nivelActual.id,
           nivelActual.insigniaId,
           nivelActual.puntosOtorga,
-          nuevoNivel
+          nuevoNivel,
+          notaObtenida
         );
 
+        // Actualizamos el perfil local (en memoria) con lo que se acaba de
+        // guardar, para poder revisar aquí mismo si con este reto ya se
+        // completaron los 10 del eje actual, sin tener que releer Firestore.
+        perfilActual.retosCompletados = perfilActual.retosCompletados || [];
+        if (!perfilActual.retosCompletados.includes(nivelActual.id)) {
+          perfilActual.retosCompletados.push(nivelActual.id);
+        }
+        if (typeof notaObtenida === "number") {
+          perfilActual.calificaciones = perfilActual.calificaciones || {};
+          perfilActual.calificaciones[nivelActual.id] = { automatica: notaObtenida, ajustada: null };
+        }
+
         let mensaje = `¡Reto completado! Ganaste ${nivelActual.puntosOtorga} puntos.`;
+        if (typeof notaObtenida === "number") {
+          mensaje += ` Nota obtenida: ${notaObtenida.toFixed(1)}.`;
+        }
         if (nivelActual.insigniaId) {
           mensaje += " Desbloqueaste una nueva insignia 🏅";
+        }
+
+        if (perfilActual.rol === "estudiante" || perfilActual.rol === "profesor") {
+          try {
+            const avance = await avanzarProgresoSiCorresponde(usuarioActual.uid, perfilActual);
+            if (avance && avance.promedio !== null) {
+              mensaje += ` ¡Terminaste el eje "${NOMBRES_EJES[avance.ejeTerminado] || avance.ejeTerminado}"! Promedio del eje: ${avance.promedio}.`;
+              if (avance.juegoCompletado) {
+                mensaje += " ¡Completaste todos los ejes del juego! 🎉";
+              }
+            }
+          } catch (error) {
+            console.error("No se pudo avanzar el progreso del eje:", error);
+          }
         }
         mensajeResultado.textContent = mensaje;
         mensajeResultado.classList.add("exito");

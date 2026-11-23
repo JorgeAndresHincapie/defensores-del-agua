@@ -6,6 +6,27 @@
   <title>Club Defensores del Agua</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .roles-grid{
+      display:grid; gap:12px; margin-top:20px; width:100%; max-width:320px;
+    }
+    .rol-btn{
+      display:flex; align-items:center; gap:12px;
+      padding:14px 16px; border:1px solid #ccc; border-radius:10px;
+      background:#fff; cursor:pointer; font-size:1rem; text-align:left;
+      transition:border-color .15s, background .15s;
+    }
+    .rol-btn:hover{ border-color:#0288d1; background:#e6f4fb; }
+    .rol-btn .emoji{ font-size:1.6rem; }
+    .rol-seleccionado-info{
+      display:flex; align-items:center; gap:8px; margin-bottom:14px;
+      font-size:.9rem; color:#555;
+    }
+    .btn-cambiar-rol{
+      background:none; border:none; color:#0288d1; cursor:pointer;
+      font-size:.85rem; text-decoration:underline; padding:0;
+    }
+  </style>
 </head>
 <body>
   <main class="login-container">
@@ -13,23 +34,74 @@
     <h1>Club Defensores del Agua</h1>
     <p class="subtitle">Institución Educativa El Llano</p>
 
-    <form id="form-login" class="login-form">
-      <label for="correo">Correo</label>
-      <input type="email" id="correo" required autocomplete="username" />
+    <section id="paso-rol">
+      <p style="margin-top:16px; font-weight:600;">¿Cómo vas a ingresar?</p>
+      <div class="roles-grid">
+        <button type="button" class="rol-btn" data-rol="estudiante">
+          <span class="emoji">🎓</span> Soy estudiante
+        </button>
+        <button type="button" class="rol-btn" data-rol="profesor">
+          <span class="emoji">👩‍🏫</span> Soy profesor
+        </button>
+        <button type="button" class="rol-btn" data-rol="superadmin">
+          <span class="emoji">🛠️</span> Soy administrador
+        </button>
+      </div>
+    </section>
 
-      <label for="password">Contraseña</label>
-      <input type="password" id="password" required autocomplete="current-password" />
+    <section id="paso-login" style="display:none;">
+      <div class="rol-seleccionado-info">
+        <span id="rol-seleccionado-texto"></span>
+        <button type="button" class="btn-cambiar-rol" id="btn-cambiar-rol">Cambiar</button>
+      </div>
 
-      <button type="submit">Ingresar</button>
-      <p id="mensaje-error" class="error"></p>
-    </form>
+      <form id="form-login" class="login-form">
+        <label for="correo">Correo</label>
+        <input type="email" id="correo" required autocomplete="username" />
+
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" required autocomplete="current-password" />
+
+        <button type="submit">Ingresar</button>
+        <p id="mensaje-error" class="error"></p>
+      </form>
+    </section>
   </main>
 
   <script type="module">
-    import { iniciarSesion, obtenerPerfilUsuario } from "./js/auth.js";
+    import { iniciarSesion, obtenerPerfilUsuario, cerrarSesion } from "./js/auth.js";
 
+    const pasoRol = document.getElementById("paso-rol");
+    const pasoLogin = document.getElementById("paso-login");
+    const rolSeleccionadoTexto = document.getElementById("rol-seleccionado-texto");
+    const btnCambiarRol = document.getElementById("btn-cambiar-rol");
     const form = document.getElementById("form-login");
     const mensajeError = document.getElementById("mensaje-error");
+
+    const ETIQUETAS_ROL = {
+      estudiante: "🎓 Ingresando como estudiante",
+      profesor: "👩‍🏫 Ingresando como profesor",
+      superadmin: "🛠️ Ingresando como administrador",
+    };
+
+    let rolSeleccionado = null;
+
+    document.querySelectorAll(".rol-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        rolSeleccionado = btn.dataset.rol;
+        rolSeleccionadoTexto.textContent = ETIQUETAS_ROL[rolSeleccionado];
+        pasoRol.style.display = "none";
+        pasoLogin.style.display = "block";
+        mensajeError.textContent = "";
+        form.reset();
+      });
+    });
+
+    btnCambiarRol.addEventListener("click", () => {
+      rolSeleccionado = null;
+      pasoLogin.style.display = "none";
+      pasoRol.style.display = "block";
+    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -44,6 +116,13 @@
 
         if (!perfil || !perfil.activo) {
           mensajeError.textContent = "Tu cuenta no está activa. Contacta a tu profesor.";
+          await cerrarSesion();
+          return;
+        }
+
+        if (perfil.rol !== rolSeleccionado) {
+          mensajeError.textContent = "Esta cuenta no corresponde al rol que elegiste. Verifica o cambia de rol.";
+          await cerrarSesion();
           return;
         }
 

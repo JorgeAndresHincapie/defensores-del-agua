@@ -138,3 +138,11 @@
   font-weight: bold;
   color: var(--verde-eco);
 }
+.nivel-card.nivel-completado {
+  border: 2px solid #2e7d32;
+  background: #f1f8f2;
+}
+
+.nivel-card.nivel-completado .nivel-orden {
+  color: #2e7d32;
+}
